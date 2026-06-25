@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ML-Flex AJP Process Intelligence</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark">AJP</span>
+        <div>
+          <h1>ML-Flex Process Intelligence</h1>
+          <p>Aerosol Jet Printing defect, trace, and RF interface surrogate</p>
+        </div>
+      </div>
+      <div class="status-strip" aria-label="model status">
+        <span id="healthDot" class="dot"></span>
+        <span id="healthText">Loading models</span>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel control-panel" aria-label="controls">
+        <div class="mode-toggle" role="tablist" aria-label="mode">
+          <button class="mode-button active" data-mode="pattern" type="button">Pattern</button>
+          <button class="mode-button" data-mode="interface" type="button">Interface</button>
+          <button class="mode-button" data-mode="optimizer" type="button">Optimizer</button>
+        </div>
+
+        <label class="field">
+          <span>Material set</span>
+          <select id="materialSet"></select>
+        </label>
+
+        <div class="material-stack" id="materialStack"></div>
+
+        <div class="mode-pane active" id="pane-pattern">
+          <label class="field">
+            <span>Printed pattern</span>
+            <select id="patternType"></select>
+          </label>
+          <label class="field">
+            <span>Nominal width <b id="widthOut"></b></span>
+            <input id="nominalWidth" type="range" min="45" max="1100" step="1" />
+          </label>
+          <label class="field">
+            <span>Atomizer voltage <b id="atomizerOut"></b></span>
+            <input id="atomizerVoltage" type="range" min="27" max="43" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Carrier flow <b id="carrierOut"></b></span>
+            <input id="carrierFlow" type="range" min="17" max="42" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Sheath flow <b id="sheathOut"></b></span>
+            <input id="sheathFlow" type="range" min="38" max="82" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Print speed <b id="speedOut"></b></span>
+            <input id="printSpeed" type="range" min="5.5" max="25" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Deposition rate <b id="depositionOut"></b></span>
+            <input id="depositionRate" type="range" min="5" max="55" step="0.1" />
+          </label>
+          <label class="field">
+            <span>Mist spread <b id="spreadOut"></b></span>
+            <input id="mistSpread" type="range" min="0" max="55" step="1" />
+          </label>
+          <label class="field">
+            <span>Clog narrowing <b id="clogOut"></b></span>
+            <input id="clogNarrowing" type="range" min="0" max="45" step="1" />
+          </label>
+          <label class="field">
+            <span>Droplet blobs <b id="blobOut"></b></span>
+            <input id="blobCount" type="range" min="0" max="6" step="1" />
+          </label>
+          <button id="runPattern" class="primary-action" type="button">Run Pattern Model</button>
+        </div>
+
+        <div class="mode-pane" id="pane-interface">
+          <label class="field">
+            <span>RF structure</span>
+            <select id="deviceType"></select>
+          </label>
+          <label class="field">
+            <span>Nominal conductor <b id="deviceWidthOut"></b></span>
+            <input id="deviceWidth" type="range" min="120" max="5200" step="5" />
+          </label>
+          <label class="field">
+            <span>Gap / feed offset <b id="deviceGapOut"></b></span>
+            <input id="deviceGap" type="range" min="60" max="900" step="5" />
+          </label>
+          <label class="field">
+            <span>Trace length <b id="traceLengthOut"></b></span>
+            <input id="traceLength" type="range" min="7" max="42" step="0.1" />
+          </label>
+          <button id="runInterface" class="primary-action" type="button">Run Interface Model</button>
+        </div>
+
+        <div class="mode-pane" id="pane-optimizer">
+          <label class="field">
+            <span>Candidate search <b id="candidateOut"></b></span>
+            <input id="candidateCount" type="range" min="200" max="1800" step="100" />
+          </label>
+          <button id="runOptimizer" class="primary-action" type="button">Optimize Process</button>
+        </div>
+      </section>
+
+      <section class="panel visual-panel" aria-label="specimen">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Synthetic specimen</p>
+            <h2 id="specimenTitle">Pattern model</h2>
+          </div>
+          <span id="datasetBadge" class="badge">Training data pending</span>
+        </div>
+        <div class="specimen-frame">
+          <svg id="specimenSvg" viewBox="0 0 760 420" role="img" aria-label="synthetic printed specimen"></svg>
+        </div>
+        <div class="metric-grid" id="primaryMetrics"></div>
+        <div class="pipeline">
+          <div>
+            <span>Sensor fusion</span>
+            <strong>mist geometry + deposition</strong>
+          </div>
+          <div>
+            <span>Trace model</span>
+            <strong>width, thickness, resistance</strong>
+          </div>
+          <div>
+            <span>RF surrogate</span>
+            <strong>patch antenna + CPW metrics</strong>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel insight-panel" aria-label="model output">
+        <div class="section-head compact">
+          <div>
+            <p class="eyebrow">Model output</p>
+            <h2>Decision state</h2>
+          </div>
+        </div>
+        <div id="decisionState" class="decision-state"></div>
+        <div class="chart-block">
+          <h3>Defect probability</h3>
+          <div id="defectBars" class="bars"></div>
+        </div>
+        <div class="chart-block">
+          <h3>Benchmarks</h3>
+          <div id="benchmarkBars" class="bars"></div>
+        </div>
+        <div class="chart-block">
+          <h3>Optimizer shortlist</h3>
+          <div id="optimizerList" class="optimizer-list"></div>
+        </div>
+      </aside>
+    </main>
+
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>

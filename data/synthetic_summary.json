@@ -1,0 +1,83 @@
+{
+  "rows": {
+    "pattern": 80000,
+    "interface": 40000,
+    "total": 120000
+  },
+  "pattern_defect_distribution": {
+    "nominal": 25260,
+    "clog": 23036,
+    "overspray": 16878,
+    "under_deposit": 13760,
+    "over_deposit": 901,
+    "unstable": 165
+  },
+  "pattern_type_distribution": {
+    "dogbone": 26795,
+    "square_pad": 26608,
+    "meander": 26597
+  },
+  "material_set_distribution": {
+    "set_5": 13522,
+    "set_6": 13445,
+    "set_2": 13318,
+    "set_3": 13297,
+    "set_1": 13246,
+    "set_4": 13172
+  },
+  "device_type_distribution": {
+    "cpw": 20033,
+    "patch_antenna": 19967
+  },
+  "target_ranges": {
+    "pattern": {
+      "line_width_um": {
+        "min": 54.01101389438897,
+        "mean": 362.6677593610624,
+        "max": 1264.5685179632183
+      },
+      "thickness_um": {
+        "min": 1.5628031840978263,
+        "mean": 3.475344191354697,
+        "max": 5.9033203703167505
+      },
+      "resistance_ohm": {
+        "min": 0.1156036368077222,
+        "mean": 17.255297148774126,
+        "max": 133.2726854986584
+      },
+      "quality_score": {
+        "min": 18.466600409220547,
+        "mean": 76.07855443284814,
+        "max": 97.87622310256093
+      }
+    },
+    "interface": {
+      "resonance_frequency_ghz": {
+        "min": 6.521886837396234,
+        "mean": 8.114198519519682,
+        "max": 11.33387987898055
+      },
+      "return_loss_db": {
+        "min": -32.93676785184308,
+        "mean": -25.727672882030486,
+        "max": -14.094621647006923
+      },
+      "insertion_loss_db": {
+        "min": 0.02,
+        "mean": 0.9364913059668272,
+        "max": 2.9534049838022196
+      },
+      "impedance_ohm": {
+        "min": 44.221408549465,
+        "mean": 51.240818226124055,
+        "max": 60.1202870666209
+      },
+      "yield_probability": {
+        "min": 0.156178122255746,
+        "mean": 0.6445641425447667,
+        "max": 0.9037309797681983
+      }
+    }
+  }
+}

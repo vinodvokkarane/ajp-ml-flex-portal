@@ -1,0 +1,108 @@
+{
+  "trained_at_utc": "2026-06-25T19:23:44.301247+00:00",
+  "synthetic_rows": {
+    "pattern": 80000,
+    "interface": 40000,
+    "total": 120000
+  },
+  "pattern": {
+    "defect_accuracy": 0.9686635121864119,
+    "defect_macro_f1": 0.8632577884282545,
+    "trace_mae": {
+      "line_width_um": 8.165011453892836,
+      "thickness_um": 0.12006243572860495,
+      "resistance_ohm": 0.9076828893835297,
+      "quality_score": 3.1756665888088085
+    },
+    "trace_r2": {
+      "line_width_um": 0.9985113965619757,
+      "thickness_um": 0.9375029559092979,
+      "resistance_ohm": 0.9929004010696091,
+      "quality_score": 0.8908640917775102
+    },
+    "conformal_q90": {
+      "line_width_um": 23.06092362408175,
+      "thickness_um": 0.2511081316225601,
+      "resistance_ohm": 2.8372385137620224,
+      "quality_score": 6.405499908526958
+    },
+    "class_distribution": {
+      "nominal": 3537,
+      "clog": 3226,
+      "overspray": 2363,
+      "under_deposit": 1926,
+      "over_deposit": 126,
+      "unstable": 23
+    }
+  },
+  "interface": {
+    "interface_mae": {
+      "resonance_frequency_ghz": 0.04239522212286782,
+      "return_loss_db": 0.8291794676611965,
+      "insertion_loss_db": 0.03980697490171396,
+      "impedance_ohm": 1.2811027443760667,
+      "yield_probability": 0.011014915301845625
+    },
+    "interface_r2": {
+      "resonance_frequency_ghz": 0.9979122752877929,
+      "return_loss_db": 0.8834489551011913,
+      "insertion_loss_db": 0.9960025602812925,
+      "impedance_ohm": 0.2937101996681061,
+      "yield_probability": 0.9873704946967782
+    },
+    "conformal_q90": {
+      "resonance_frequency_ghz": 0.08810712318624624,
+      "return_loss_db": 1.7483069921482675,
+      "insertion_loss_db": 0.08589669909020321,
+      "impedance_ohm": 2.6726157904978716,
+      "yield_probability": 0.022853292733226137
+    },
+    "device_distribution": {
+      "cpw": 2808,
+      "patch_antenna": 2793
+    }
+  },
+  "benchmarks": {
+    "pattern_trace": {
+      "ExtraTrees": {
+        "mae_mean": 3.563521129871066,
+        "r2_mean": 0.8900535862222461
+      },
+      "RandomForest": {
+        "mae_mean": 3.678612664171607,
+        "r2_mean": 0.8918885761535363
+      },
+      "HistGradientBoosting": {
+        "mae_mean": 3.1824734693974217,
+        "r2_mean": 0.9508451517652773
+      }
+    },
+    "interface_rf": {
+      "ExtraTrees": {
+        "mae_mean": 0.4778589674546761,
+        "r2_mean": 0.8175143281958611
+      },
+      "RandomForest": {
+        "mae_mean": 0.4845498257530263,
+        "r2_mean": 0.8141982525802872
+      },
+      "HistGradientBoosting": {
+        "mae_mean": 0.449282987930194,
+        "r2_mean": 0.8313898038848568
+      }
+    }
+  },
+  "model_card": {
+    "served_models": {
+      "defect_classifier": "HistGradientBoostingClassifier with material/process/sensor feature fusion",
+      "trace_regressor": "HistGradientBoostingRegressor multi-output wrapper with empirical conformal residual intervals",
+      "interface_regressor": "HistGradientBoostingRegressor surrogate for X-band patch antenna and CPW metrics"
+    },
+    "research_upgrade_path": [
+      "Tabular foundation models for small real datasets after lab data collection",
+      "SAM 2 or DINOv2-style visual encoders for raw high-speed camera frames",
+      "Temporal Fusion Transformer for high-rate sensor streams",
+      "Bayesian multi-objective optimization for active experiment selection"
+    ]
+  }
+}
