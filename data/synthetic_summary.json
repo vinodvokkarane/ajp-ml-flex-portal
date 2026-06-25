@@ -2,7 +2,8 @@
   "rows": {
     "pattern": 80000,
     "interface": 40000,
-    "total": 120000
+    "coupon": 120000,
+    "total": 240000
   },
   "pattern_defect_distribution": {
     "nominal": 25260,
@@ -28,6 +29,29 @@
   "device_type_distribution": {
     "cpw": 20033,
     "patch_antenna": 19967
+  },
+  "coupon_structure_distribution": {
+    "daisy_chain_kelvin": 17465,
+    "straight_lines": 17216,
+    "meander_lines": 17119,
+    "shear_test_pads": 17117,
+    "dummy_die_attach": 17043,
+    "overlap_pads": 17034,
+    "square_pads": 17006
+  },
+  "coupon_failure_distribution": {
+    "marginal": 80051,
+    "delamination": 24058,
+    "crack_fatigue": 6452,
+    "contact_degradation": 6314,
+    "pass": 1790,
+    "resistance_drift": 822,
+    "shear_failure": 494,
+    "voiding": 19
+  },
+  "coupon_ink_distribution": {
+    "baseline_ag": 60068,
+    "high_temp_500c": 59932
   },
   "target_ranges": {
     "pattern": {
@@ -77,6 +101,48 @@
         "min": 0.156178122255746,
         "mean": 0.6445641425447667,
         "max": 0.9037309797681983
+      }
+    },
+    "coupon": {
+      "sheet_resistance_drift_pct": {
+        "min": -2.734994784297715,
+        "mean": 26.948317634659094,
+        "max": 67.78113235062746
+      },
+      "contact_resistance_drift_pct": {
+        "min": -1.555763034545699,
+        "mean": 43.065973919334226,
+        "max": 104.68416284587846
+      },
+      "crack_probability": {
+        "min": 0.02060676841372648,
+        "mean": 0.30788691018376835,
+        "max": 0.9685562493367912
+      },
+      "delamination_area_pct": {
+        "min": 0.0,
+        "mean": 27.769434498670446,
+        "max": 82.5358858844652
+      },
+      "adhesion_strength_mpa": {
+        "min": 4.771999739141652,
+        "mean": 23.25550883786324,
+        "max": 34.79699491212773
+      },
+      "void_fraction_pct": {
+        "min": 0.0,
+        "mean": 4.724879850004999,
+        "max": 11.667657145969974
+      },
+      "post_aging_shear_mpa": {
+        "min": 0.8,
+        "mean": 15.947866025910828,
+        "max": 27.917390576970377
+      },
+      "reliability_score": {
+        "min": 0.0,
+        "mean": 51.633367628722,
+        "max": 94.96127386176234
       }
     }
   }

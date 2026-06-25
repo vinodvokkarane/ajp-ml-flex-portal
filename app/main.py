@@ -9,8 +9,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from mlflex.modeling import load_bundle, optimize_process, predict_interface, predict_pattern
-from mlflex.synthetic import default_interface_payload, default_pattern_payload, metadata
+from mlflex.modeling import digital_twin_feedback, load_bundle, optimize_process, predict_coupon, predict_interface, predict_pattern
+from mlflex.synthetic import default_coupon_payload, default_interface_payload, default_pattern_payload, metadata
 
 ROOT = Path(__file__).resolve().parents[1]
 STATIC_DIR = ROOT / "static"
@@ -68,6 +68,7 @@ def api_metadata() -> dict[str, Any]:
     data["defaults"] = {
         "pattern": default_pattern_payload(),
         "interface": default_interface_payload(),
+        "coupon": default_coupon_payload(),
     }
     try:
         data["metrics"] = bundle()["metrics"]
@@ -120,3 +121,14 @@ def api_predict_interface(payload: Payload) -> dict[str, Any]:
 def api_optimize(payload: Payload) -> dict[str, Any]:
     count = int(payload.values.pop("candidates", 700))
     return optimize_process(bundle(), payload.values, candidates=max(100, min(2_500, count)))
+
+
+@app.post("/api/predict/coupon")
+def api_predict_coupon(payload: Payload) -> dict[str, Any]:
+    return predict_coupon(bundle(), payload.values)
+
+
+@app.post("/api/digital-twin/feedback")
+def api_digital_twin_feedback(payload: Payload) -> dict[str, Any]:
+    count = int(payload.values.pop("candidates", 600))
+    return digital_twin_feedback(bundle(), payload.values, candidates=max(120, min(2_500, count)))

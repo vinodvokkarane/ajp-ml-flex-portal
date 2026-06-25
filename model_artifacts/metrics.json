@@ -1,9 +1,10 @@
 {
-  "trained_at_utc": "2026-06-25T19:23:44.301247+00:00",
+  "trained_at_utc": "2026-06-25T22:49:15.000671+00:00",
   "synthetic_rows": {
     "pattern": 80000,
     "interface": 40000,
-    "total": 120000
+    "coupon": 120000,
+    "total": 240000
   },
   "pattern": {
     "defect_accuracy": 0.9686635121864119,
@@ -62,6 +63,63 @@
       "patch_antenna": 2793
     }
   },
+  "coupon": {
+    "failure_accuracy": 0.7910714285714285,
+    "failure_macro_f1": 0.49483274236058483,
+    "coupon_mae": {
+      "sheet_resistance_drift_pct": 1.683692132331731,
+      "contact_resistance_drift_pct": 2.3257287588767435,
+      "crack_probability": 0.020797833327702426,
+      "delamination_area_pct": 1.8325618608153063,
+      "adhesion_strength_mpa": 1.2681252847997626,
+      "void_fraction_pct": 0.010982949193529276,
+      "post_aging_shear_mpa": 1.093220055073034,
+      "reliability_score": 2.3695167824681147
+    },
+    "coupon_r2": {
+      "sheet_resistance_drift_pct": 0.9788393376753349,
+      "contact_resistance_drift_pct": 0.9782076233670391,
+      "crack_probability": 0.9668546632804683,
+      "delamination_area_pct": 0.9712605194986788,
+      "adhesion_strength_mpa": 0.8830319510957444,
+      "void_fraction_pct": 0.9998788239519453,
+      "post_aging_shear_mpa": 0.8603126355904689,
+      "reliability_score": 0.9744452477233858
+    },
+    "conformal_q90": {
+      "sheet_resistance_drift_pct": 3.4728958182691003,
+      "contact_resistance_drift_pct": 4.701105938304137,
+      "crack_probability": 0.04285412626394236,
+      "delamination_area_pct": 3.772939314474549,
+      "adhesion_strength_mpa": 2.597860035029083,
+      "void_fraction_pct": 0.017695581860357558,
+      "post_aging_shear_mpa": 2.247216939788486,
+      "reliability_score": 4.845487678802906
+    },
+    "failure_distribution": {
+      "marginal": 11207,
+      "delamination": 3368,
+      "crack_fatigue": 904,
+      "contact_degradation": 884,
+      "pass": 250,
+      "resistance_drift": 115,
+      "shear_failure": 69,
+      "voiding": 3
+    },
+    "structure_distribution": {
+      "daisy_chain_kelvin": 2458,
+      "shear_test_pads": 2423,
+      "straight_lines": 2416,
+      "meander_lines": 2406,
+      "square_pads": 2404,
+      "dummy_die_attach": 2387,
+      "overlap_pads": 2306
+    },
+    "ink_distribution": {
+      "baseline_ag": 8432,
+      "high_temp_500c": 8368
+    }
+  },
   "benchmarks": {
     "pattern_trace": {
       "ExtraTrees": {
@@ -90,13 +148,28 @@
         "mae_mean": 0.449282987930194,
         "r2_mean": 0.8313898038848568
       }
+    },
+    "coupon_reliability": {
+      "ExtraTrees": {
+        "mae_mean": 1.6882299443479873,
+        "r2_mean": 0.9128999730210214
+      },
+      "RandomForest": {
+        "mae_mean": 1.7117706035016313,
+        "r2_mean": 0.9071473535158682
+      },
+      "HistGradientBoosting": {
+        "mae_mean": 1.4019788403649656,
+        "r2_mean": 0.9472700302302984
+      }
     }
   },
   "model_card": {
     "served_models": {
       "defect_classifier": "HistGradientBoostingClassifier with material/process/sensor feature fusion",
       "trace_regressor": "HistGradientBoostingRegressor multi-output wrapper with empirical conformal residual intervals",
-      "interface_regressor": "HistGradientBoostingRegressor surrogate for X-band patch antenna and CPW metrics"
+      "interface_regressor": "HistGradientBoostingRegressor surrogate for X-band patch antenna and CPW metrics",
+      "coupon_digital_twin": "Tree ensemble reliability surrogate for the integrated alumina interface and bonding coupon"
     },
     "research_upgrade_path": [
       "Tabular foundation models for small real datasets after lab data collection",

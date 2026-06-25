@@ -21,17 +21,36 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from .synthetic import (
+    COUPON_FEATURES,
+    COUPON_TARGETS,
     INTERFACE_FEATURES,
     INTERFACE_TARGETS,
     PATTERN_FEATURES,
     PATTERN_TARGETS,
+    complete_coupon_payload,
     complete_interface_payload,
     complete_pattern_payload,
 )
 
 
 def _categorical_columns(columns: list[str]) -> list[str]:
-    return [c for c in columns if c in {"material_set", "ink", "substrate", "pattern_type", "device_type"}]
+    return [
+        c
+        for c in columns
+        if c
+        in {
+            "material_set",
+            "ink",
+            "substrate",
+            "pattern_type",
+            "device_type",
+            "coupon_zone",
+            "coupon_structure",
+            "measurement_family",
+            "ink_family",
+            "test_method",
+        }
+    ]
 
 
 def _numeric_columns(columns: list[str]) -> list[str]:
@@ -177,6 +196,74 @@ def train_interface_model(interface_df: pd.DataFrame, seed: int = 23) -> dict[st
     }
 
 
+def train_coupon_model(coupon_df: pd.DataFrame, seed: int = 29) -> dict[str, Any]:
+    train_df, holdout_df = train_test_split(
+        coupon_df,
+        test_size=0.28,
+        random_state=seed,
+        stratify=coupon_df["failure_mode"],
+    )
+    cal_df, test_df = train_test_split(
+        holdout_df,
+        test_size=0.50,
+        random_state=seed + 1,
+        stratify=holdout_df["failure_mode"],
+    )
+    regressor = Pipeline(
+        steps=[
+            ("prep", preprocessor(COUPON_FEATURES)),
+            ("model", hist_gradient_regressor(seed, max_iter=275)),
+        ]
+    )
+    classifier = Pipeline(
+        steps=[
+            ("prep", preprocessor(COUPON_FEATURES)),
+            (
+                "model",
+                HistGradientBoostingClassifier(
+                    max_iter=275,
+                    learning_rate=0.06,
+                    l2_regularization=0.05,
+                    max_leaf_nodes=31,
+                    random_state=seed + 2,
+                    class_weight="balanced",
+                ),
+            ),
+        ]
+    )
+    regressor.fit(train_df[COUPON_FEATURES], train_df[COUPON_TARGETS])
+    classifier.fit(train_df[COUPON_FEATURES], train_df["failure_mode"])
+
+    cal_pred = regressor.predict(cal_df[COUPON_FEATURES])
+    residual_q90 = np.quantile(np.abs(cal_df[COUPON_TARGETS].to_numpy() - cal_pred), 0.90, axis=0)
+    test_pred = regressor.predict(test_df[COUPON_FEATURES])
+    mode_pred = classifier.predict(test_df[COUPON_FEATURES])
+
+    metrics = {
+        "failure_accuracy": float(accuracy_score(test_df["failure_mode"], mode_pred)),
+        "failure_macro_f1": float(f1_score(test_df["failure_mode"], mode_pred, average="macro")),
+        "coupon_mae": {
+            target: float(mean_absolute_error(test_df[target], test_pred[:, i]))
+            for i, target in enumerate(COUPON_TARGETS)
+        },
+        "coupon_r2": {
+            target: float(r2_score(test_df[target], test_pred[:, i]))
+            for i, target in enumerate(COUPON_TARGETS)
+        },
+        "conformal_q90": {target: float(residual_q90[i]) for i, target in enumerate(COUPON_TARGETS)},
+        "failure_distribution": test_df["failure_mode"].value_counts().to_dict(),
+        "structure_distribution": test_df["coupon_structure"].value_counts().to_dict(),
+        "ink_distribution": test_df["ink_family"].value_counts().to_dict(),
+    }
+    return {
+        "regressor": regressor,
+        "classifier": classifier,
+        "metrics": metrics,
+        "features": COUPON_FEATURES,
+        "targets": COUPON_TARGETS,
+    }
+
+
 def benchmark_regressors(df: pd.DataFrame, features: list[str], targets: list[str], seed: int = 37, sample_size: int = 18_000) -> dict[str, Any]:
     bench_df = df.sample(min(sample_size, len(df)), random_state=seed)
     train_df, test_df = train_test_split(bench_df, test_size=0.25, random_state=seed)
@@ -260,6 +347,123 @@ def predict_interface(bundle: dict[str, Any], payload: dict[str, Any]) -> dict[s
         "input": row,
         "prediction": prediction,
         "intervals": _prediction_interval(prediction, bundle["interface"]["metrics"]["conformal_q90"]),
+    }
+
+
+def predict_coupon(bundle: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
+    row = complete_coupon_payload(payload)
+    X = pd.DataFrame([row], columns=COUPON_FEATURES)
+    values = bundle["coupon"]["regressor"].predict(X)[0]
+    prediction = {target: float(values[i]) for i, target in enumerate(COUPON_TARGETS)}
+    classifier = bundle["coupon"]["classifier"]
+    class_probs = classifier.predict_proba(X)[0]
+    classes = list(classifier.named_steps["model"].classes_)
+    probabilities = {classes[i]: float(class_probs[i]) for i in range(len(classes))}
+    failure_mode = classes[int(np.argmax(class_probs))]
+    return {
+        "input": row,
+        "prediction": prediction,
+        "intervals": _prediction_interval(prediction, bundle["coupon"]["metrics"]["conformal_q90"]),
+        "failure_mode": failure_mode,
+        "failure_probabilities": probabilities,
+        "derived": {
+            "thermal_exposure": float(max(0.0, row["aging_temp_c"] - 25.0) / 475.0 * np.log1p(row["aging_hours"]) / np.log1p(1000.0)),
+            "cycling_exposure": float(max(0.0, row["cycle_high_temp_c"] - row["cycle_low_temp_c"]) / 540.0 * np.log1p(row["thermal_cycles"]) / np.log1p(1000.0)),
+            "mechanical_exposure": float(row["strain_pct"] / 6.5 * np.log1p(row["strain_cycles"]) / np.log1p(10000.0)),
+            "bonding_case": row["coupon_zone"] == "bonding",
+        },
+    }
+
+
+def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candidates: int = 600, seed: int = 131) -> dict[str, Any]:
+    rng = np.random.default_rng(seed)
+    base = complete_coupon_payload(payload)
+    rows = []
+    for _ in range(candidates):
+        row = dict(base)
+        row.update(
+            {
+                "print_speed_mm_s": float(rng.uniform(7.0, 22.0)),
+                "atomizer_voltage_v": float(rng.uniform(30.0, 40.5)),
+                "carrier_flow_sccm": float(rng.uniform(20.0, 37.0)),
+                "sheath_flow_sccm": float(rng.uniform(46.0, 76.0)),
+                "substrate_temp_c": float(rng.uniform(42.0, 88.0)),
+                "cure_peak_temp_c": float(rng.uniform(180.0, 505.0)),
+                "cure_time_min": float(rng.uniform(20.0, 95.0)),
+                "ct_void_fraction_pct": float(rng.uniform(0.5, 10.0)),
+                "oxidation_index": float(rng.uniform(0.04, 0.55)),
+                "edge_roughness_um": float(rng.uniform(1.4, 14.5)),
+                "alignment_error_um": float(rng.uniform(3.0, 45.0)),
+                "thickness_um": float(rng.uniform(1.8, 5.6)),
+            }
+        )
+        row["line_width_um"] = float(row["nominal_width_um"] * rng.uniform(0.93, 1.10))
+        rows.append(row)
+
+    X = pd.DataFrame(rows, columns=COUPON_FEATURES)
+    pred = bundle["coupon"]["regressor"].predict(X)
+    cls_prob = bundle["coupon"]["classifier"].predict_proba(X)
+    classes = list(bundle["coupon"]["classifier"].named_steps["model"].classes_)
+    pass_idx = classes.index("pass") if "pass" in classes else int(np.argmax(cls_prob.mean(axis=0)))
+
+    target_idx = {target: i for i, target in enumerate(COUPON_TARGETS)}
+    reliability = pred[:, target_idx["reliability_score"]]
+    sheet = pred[:, target_idx["sheet_resistance_drift_pct"]]
+    contact = pred[:, target_idx["contact_resistance_drift_pct"]]
+    delam = pred[:, target_idx["delamination_area_pct"]]
+    voids = pred[:, target_idx["void_fraction_pct"]]
+    shear = pred[:, target_idx["post_aging_shear_mpa"]]
+    score = reliability + 16.0 * cls_prob[:, pass_idx] - 0.10 * sheet - 0.09 * contact - 0.12 * delam - 0.42 * voids + 0.16 * shear
+    top_idx = np.argsort(score)[-5:][::-1]
+
+    baseline = predict_coupon(bundle, payload)
+    baseline_pred = baseline["prediction"]
+    top = []
+    for idx in top_idx:
+        row = X.iloc[idx].to_dict()
+        p = {target: float(pred[idx, i]) for i, target in enumerate(COUPON_TARGETS)}
+        top.append(
+            {
+                "score": float(score[idx]),
+                "settings": {
+                    "print_speed_mm_s": row["print_speed_mm_s"],
+                    "atomizer_voltage_v": row["atomizer_voltage_v"],
+                    "carrier_flow_sccm": row["carrier_flow_sccm"],
+                    "sheath_flow_sccm": row["sheath_flow_sccm"],
+                    "cure_peak_temp_c": row["cure_peak_temp_c"],
+                    "cure_time_min": row["cure_time_min"],
+                    "edge_roughness_um": row["edge_roughness_um"],
+                    "ct_void_fraction_pct": row["ct_void_fraction_pct"],
+                },
+                "prediction": p,
+                "pass_probability": float(cls_prob[idx, pass_idx]),
+                "improvement": {
+                    "reliability_score": float(p["reliability_score"] - baseline_pred["reliability_score"]),
+                    "resistance_drift_pct": float(baseline_pred["sheet_resistance_drift_pct"] - p["sheet_resistance_drift_pct"]),
+                    "delamination_area_pct": float(baseline_pred["delamination_area_pct"] - p["delamination_area_pct"]),
+                },
+            }
+        )
+
+    best = top[0]
+    actions = []
+    if baseline_pred["void_fraction_pct"] > 7.5:
+        actions.append("Tighten alignment and lower CT void fraction before die attach qualification.")
+    if baseline_pred["sheet_resistance_drift_pct"] > 35.0 or baseline_pred["contact_resistance_drift_pct"] > 45.0:
+        actions.append("Increase cure robustness and reduce edge roughness to stabilize electrical drift.")
+    if baseline_pred["crack_probability"] > 0.35:
+        actions.append("Reduce strain dose or split bend/cycle exposure with in-situ resistance checks.")
+    if baseline_pred["delamination_area_pct"] > 25.0:
+        actions.append("Favor the 500C ink/cure window and inspect overlap pads before bonding escalation.")
+    if not actions:
+        actions.append("Current recipe is inside the modeled reliability window; continue monitoring drift and voiding.")
+
+    return {
+        "baseline": baseline,
+        "candidates": candidates,
+        "top": top,
+        "recommended_recipe": best,
+        "actions": actions,
     }
 
 

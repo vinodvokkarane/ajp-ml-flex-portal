@@ -5,6 +5,7 @@ Render-ready demonstration site for machine-learning-assisted aerosol jet printi
 - Basic printed pattern coupons: square pads, dogbones, and meander lines.
 - Figure 6 style material stacks: conductive inks on Kapton, FR4, and NEA 121 dielectric stacks.
 - RF validation devices: X-band patch antenna and coplanar waveguide (CPW).
+- Integrated alumina interface and bonding coupon structures from the supplied figure: Zone A straight lines, meanders, square pads, overlap pads, and Zone B daisy-chain Kelvin, dummy die attach, and shear test pads.
 
 The proposal document is not committed. The implementation encodes only the derived public-facing demo structure: material sets, pattern families, sensor features, defect modes, trace metrics, and RF validation targets.
 
@@ -14,8 +15,10 @@ The proposal document is not committed. The implementation encodes only the deri
 - Defect classifier for nominal, overspray, clog, under-deposit, over-deposit, and unstable states.
 - Trace regressor for line width, thickness, resistance, and quality score.
 - RF interface surrogate for resonance frequency, return loss, insertion loss, impedance, and yield probability.
+- Coupon reliability surrogate for sheet/contact resistance drift, crack probability, delamination, adhesion, CT voiding, shear strength, reliability score, and failure mode.
 - Empirical conformal residual bands for q90-style prediction intervals.
 - Candidate process optimizer that searches feasible process settings and ranks likely high-yield recipes.
+- Digital Twin feedback loop that searches nearby coupon process settings and recommends corrective actions for drift, voiding, cracking, delamination, and shear-risk reduction.
 
 ## Research Basis
 
@@ -34,7 +37,7 @@ The first deployable version uses robust tree ensembles because this demo is des
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python scripts/train_models.py --pattern-samples 80000 --interface-samples 40000
+python scripts/train_models.py --pattern-samples 80000 --interface-samples 40000 --coupon-samples 120000
 uvicorn app.main:app --reload
 ```
 
@@ -60,10 +63,21 @@ The saved model artifacts in `model_artifacts/` are loaded at startup. Re-run `s
 
 ## Data Notes
 
-The training run creates synthetic rows from physics-inspired relationships and domain-randomized process settings. The full generated data can be recreated with:
+The training run creates synthetic rows from physics-inspired relationships and domain-randomized process, thermal, mechanical, inspection, and bonding settings. The default run generates 240,000 rows: 80,000 printed-pattern rows, 40,000 RF/interface rows, and 120,000 integrated-coupon rows.
+
+The coupon generator covers:
+
+- Inks: baseline Ag ink and 500C high-temperature ink.
+- Substrate: single 500C-capable alumina platform.
+- Zone A interface structures: straight lines, meander lines, square pads, and overlap pads.
+- Zone B bonding structures: daisy-chain Kelvin structures, dummy die/chip attach sites, and shear test pads.
+- Test methods: electrical/Kelvin, thermal aging, thermal cycling, mechanical bending/strain, shear/pull, X-ray/CT, and optical/SEM/EDS/FIB.
+- Representative conditions: 150C, 250C, 350C, and 500C aging; -40C to 125C and room-temperature to 500C cycling; static and cyclic strain; in-situ electrical drift monitoring.
+
+The full generated data can be recreated with:
 
 ```powershell
 python scripts/train_models.py --write-full-data
 ```
 
-Full parquet files are ignored by git to keep the demo repository lightweight. The committed `data/synthetic_preview.json`, `data/synthetic_summary.json`, and `model_artifacts/metrics.json` document the training distribution and metrics.
+Full parquet files are ignored by git to keep the demo repository lightweight. The committed `data/synthetic_preview.json`, `data/synthetic_summary.json`, and `model_artifacts/metrics.json` document the training distribution, detailed target ranges, model benchmarks, and Digital Twin reliability metrics.

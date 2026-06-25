@@ -144,6 +144,108 @@ DEVICE_TYPES: tuple[dict[str, Any], ...] = (
     },
 )
 
+COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
+    {
+        "id": "straight_lines",
+        "label": "Zone A straight lines",
+        "zone": "interface",
+        "measurement_family": "sheet_resistance",
+        "nominal_width_um": 95.0,
+        "path_length_mm": 64.0,
+        "overlap_area_mm2": 0.0,
+        "bond_area_mm2": 0.0,
+    },
+    {
+        "id": "meander_lines",
+        "label": "Zone A meander lines",
+        "zone": "interface",
+        "measurement_family": "crack_fatigue",
+        "nominal_width_um": 78.0,
+        "path_length_mm": 135.0,
+        "overlap_area_mm2": 0.0,
+        "bond_area_mm2": 0.0,
+    },
+    {
+        "id": "square_pads",
+        "label": "Zone A square pads",
+        "zone": "interface",
+        "measurement_family": "adhesion_delamination",
+        "nominal_width_um": 520.0,
+        "path_length_mm": 6.0,
+        "overlap_area_mm2": 0.0,
+        "bond_area_mm2": 0.30,
+    },
+    {
+        "id": "overlap_pads",
+        "label": "Zone A overlap pads",
+        "zone": "interface",
+        "measurement_family": "interface_adhesion",
+        "nominal_width_um": 740.0,
+        "path_length_mm": 10.0,
+        "overlap_area_mm2": 1.15,
+        "bond_area_mm2": 0.0,
+    },
+    {
+        "id": "daisy_chain_kelvin",
+        "label": "Zone B daisy-chain Kelvin",
+        "zone": "bonding",
+        "measurement_family": "contact_resistance",
+        "nominal_width_um": 135.0,
+        "path_length_mm": 92.0,
+        "overlap_area_mm2": 0.22,
+        "bond_area_mm2": 0.0,
+    },
+    {
+        "id": "dummy_die_attach",
+        "label": "Zone B dummy die attach",
+        "zone": "bonding",
+        "measurement_family": "bond_reliability",
+        "nominal_width_um": 1100.0,
+        "path_length_mm": 4.5,
+        "overlap_area_mm2": 0.0,
+        "bond_area_mm2": 1.85,
+    },
+    {
+        "id": "shear_test_pads",
+        "label": "Zone B shear test pads",
+        "zone": "bonding",
+        "measurement_family": "shear_strength",
+        "nominal_width_um": 880.0,
+        "path_length_mm": 7.2,
+        "overlap_area_mm2": 0.58,
+        "bond_area_mm2": 1.10,
+    },
+)
+
+COUPON_INKS: tuple[dict[str, Any], ...] = (
+    {
+        "id": "baseline_ag",
+        "label": "Baseline Ag ink",
+        "nominal_conductivity_s_m": 1.05e7,
+        "temp_rating_c": 250.0,
+        "oxidation_bias": 0.20,
+        "adhesion_bias": 0.00,
+    },
+    {
+        "id": "high_temp_500c",
+        "label": "500C high-temperature ink",
+        "nominal_conductivity_s_m": 7.8e6,
+        "temp_rating_c": 500.0,
+        "oxidation_bias": -0.12,
+        "adhesion_bias": 0.12,
+    },
+)
+
+COUPON_TEST_METHODS: tuple[dict[str, Any], ...] = (
+    {"id": "electrical_4pt", "label": "Electrical 4-point / Kelvin", "stress_bias": 0.02},
+    {"id": "thermal_aging", "label": "Thermal aging", "stress_bias": 0.18},
+    {"id": "thermal_cycling", "label": "Thermal cycling", "stress_bias": 0.24},
+    {"id": "mechanical_bending", "label": "Mechanical bending / strain", "stress_bias": 0.22},
+    {"id": "shear_pull", "label": "Shear / pull testing", "stress_bias": 0.20},
+    {"id": "xray_ct", "label": "X-ray / CT", "stress_bias": 0.05},
+    {"id": "optical_sem_eds_fib", "label": "Optical / SEM / EDS / FIB", "stress_bias": 0.04},
+)
+
 
 PATTERN_FEATURES = [
     "material_set",
@@ -214,16 +316,67 @@ INTERFACE_TARGETS = [
     "yield_probability",
 ]
 
+COUPON_FEATURES = [
+    "coupon_zone",
+    "coupon_structure",
+    "measurement_family",
+    "ink_family",
+    "substrate",
+    "test_method",
+    "nominal_width_um",
+    "path_length_mm",
+    "overlap_area_mm2",
+    "bond_area_mm2",
+    "print_speed_mm_s",
+    "atomizer_voltage_v",
+    "carrier_flow_sccm",
+    "sheath_flow_sccm",
+    "substrate_temp_c",
+    "cure_peak_temp_c",
+    "cure_time_min",
+    "aging_temp_c",
+    "aging_hours",
+    "cycle_low_temp_c",
+    "cycle_high_temp_c",
+    "thermal_cycles",
+    "bend_radius_mm",
+    "strain_pct",
+    "strain_cycles",
+    "ct_void_fraction_pct",
+    "oxidation_index",
+    "edge_roughness_um",
+    "alignment_error_um",
+    "line_width_um",
+    "thickness_um",
+    "initial_resistance_ohm",
+]
+
+COUPON_TARGETS = [
+    "sheet_resistance_drift_pct",
+    "contact_resistance_drift_pct",
+    "crack_probability",
+    "delamination_area_pct",
+    "adhesion_strength_mpa",
+    "void_fraction_pct",
+    "post_aging_shear_mpa",
+    "reliability_score",
+]
+
 
 def metadata() -> dict[str, Any]:
     return {
         "material_sets": [m.__dict__ for m in MATERIAL_SETS],
         "pattern_types": list(PATTERN_TYPES),
         "device_types": list(DEVICE_TYPES),
+        "coupon_structures": list(COUPON_STRUCTURES),
+        "coupon_inks": list(COUPON_INKS),
+        "coupon_test_methods": list(COUPON_TEST_METHODS),
         "pattern_features": PATTERN_FEATURES,
         "pattern_targets": PATTERN_TARGETS,
         "interface_features": INTERFACE_FEATURES,
         "interface_targets": INTERFACE_TARGETS,
+        "coupon_features": COUPON_FEATURES,
+        "coupon_targets": COUPON_TARGETS,
     }
 
 
@@ -462,6 +615,254 @@ def _device_arrays(device_idx: np.ndarray, rng: np.random.Generator) -> dict[str
     }
 
 
+def _coupon_structure_arrays(structure_idx: np.ndarray, rng: np.random.Generator) -> dict[str, np.ndarray]:
+    structures = np.array([s["id"] for s in COUPON_STRUCTURES], dtype=object)[structure_idx]
+    zones = np.array([s["zone"] for s in COUPON_STRUCTURES], dtype=object)[structure_idx]
+    families = np.array([s["measurement_family"] for s in COUPON_STRUCTURES], dtype=object)[structure_idx]
+    width = np.array([s["nominal_width_um"] for s in COUPON_STRUCTURES])[structure_idx]
+    length = np.array([s["path_length_mm"] for s in COUPON_STRUCTURES])[structure_idx]
+    overlap = np.array([s["overlap_area_mm2"] for s in COUPON_STRUCTURES])[structure_idx]
+    bond = np.array([s["bond_area_mm2"] for s in COUPON_STRUCTURES])[structure_idx]
+    return {
+        "coupon_structure": structures,
+        "coupon_zone": zones,
+        "measurement_family": families,
+        "nominal_width_um": _clip(width * rng.normal(1.0, 0.04, len(structure_idx)), 45.0, 1400.0),
+        "path_length_mm": _clip(length * rng.normal(1.0, 0.05, len(structure_idx)), 3.5, 165.0),
+        "overlap_area_mm2": _clip(overlap * rng.normal(1.0, 0.08, len(structure_idx)), 0.0, 1.8),
+        "bond_area_mm2": _clip(bond * rng.normal(1.0, 0.08, len(structure_idx)), 0.0, 2.4),
+    }
+
+
+def _coupon_ink_arrays(ink_idx: np.ndarray) -> dict[str, np.ndarray]:
+    return {
+        "ink_family": np.array([i["id"] for i in COUPON_INKS], dtype=object)[ink_idx],
+        "nominal_conductivity_s_m": np.array([i["nominal_conductivity_s_m"] for i in COUPON_INKS])[ink_idx],
+        "temp_rating_c": np.array([i["temp_rating_c"] for i in COUPON_INKS])[ink_idx],
+        "oxidation_bias": np.array([i["oxidation_bias"] for i in COUPON_INKS])[ink_idx],
+        "adhesion_bias": np.array([i["adhesion_bias"] for i in COUPON_INKS])[ink_idx],
+    }
+
+
+def generate_coupon_dataset(n: int = 120_000, seed: int | None = 31) -> pd.DataFrame:
+    rng = _rng(seed)
+    structure_idx = _choice_index(rng, n, len(COUPON_STRUCTURES))
+    ink_idx = _choice_index(rng, n, len(COUPON_INKS))
+    method_idx = _choice_index(rng, n, len(COUPON_TEST_METHODS))
+    struct = _coupon_structure_arrays(structure_idx, rng)
+    ink = _coupon_ink_arrays(ink_idx)
+    methods = np.array([m["id"] for m in COUPON_TEST_METHODS], dtype=object)[method_idx]
+    method_stress = np.array([m["stress_bias"] for m in COUPON_TEST_METHODS])[method_idx]
+
+    width = struct["nominal_width_um"]
+    speed = rng.uniform(5.5, 24.0, n)
+    atomizer = rng.uniform(28.0, 42.0, n)
+    carrier = rng.uniform(18.0, 40.0, n)
+    sheath = rng.uniform(42.0, 80.0, n)
+    substrate_temp = rng.uniform(35.0, 95.0, n)
+    cure_peak = rng.uniform(140.0, 520.0, n)
+    cure_time = rng.uniform(10.0, 120.0, n)
+
+    aging_choices = np.array([25.0, 150.0, 250.0, 350.0, 500.0])
+    aging_temp = rng.choice(aging_choices, n, p=[0.15, 0.18, 0.22, 0.22, 0.23])
+    aging_hours = rng.choice(np.array([0.0, 24.0, 72.0, 168.0, 500.0, 1000.0]), n, p=[0.12, 0.18, 0.22, 0.24, 0.16, 0.08])
+    cycle_low = rng.choice(np.array([-40.0, 25.0]), n, p=[0.72, 0.28])
+    cycle_high = rng.choice(np.array([125.0, 250.0, 350.0, 500.0]), n, p=[0.28, 0.25, 0.24, 0.23])
+    thermal_cycles = rng.choice(np.array([0, 50, 100, 250, 500, 1000]), n, p=[0.16, 0.18, 0.22, 0.20, 0.16, 0.08])
+    bend_radius = rng.uniform(3.0, 80.0, n)
+    strain = _clip(18.0 / bend_radius + rng.normal(0.0, 0.035, n), 0.02, 6.5)
+    strain_cycles = rng.choice(np.array([0, 50, 200, 1000, 5000, 10000]), n, p=[0.20, 0.17, 0.22, 0.20, 0.14, 0.07])
+
+    flow_ratio = carrier / np.maximum(sheath, 1.0)
+    deposition_rate = _clip(
+        19.5
+        + 0.76 * (atomizer - 35.0)
+        + 0.38 * (carrier - 28.0)
+        - 0.19 * (sheath - 60.0)
+        - 0.08 * (speed - 14.0)
+        + rng.normal(0.0, 2.0, n),
+        5.0,
+        52.0,
+    )
+    spread = _clip(0.82 * (flow_ratio - 0.49) + 0.016 * (atomizer - 35.0) - 0.010 * (speed - 14.0), -0.04, 0.46)
+    narrowing = _clip(0.012 * (speed - 14.0) - 0.024 * (atomizer - 35.0) - 0.008 * (carrier - 28.0), -0.04, 0.38)
+    edge_roughness = _clip(2.1 + 16.0 * np.maximum(0, spread) + 19.0 * np.maximum(0, narrowing) + np.abs(rng.normal(0, 1.4, n)), 0.7, 36.0)
+    alignment = _clip(np.abs(rng.normal(18.0, 14.0, n)) + np.maximum(0, spread) * 32.0, 0.8, 115.0)
+
+    dep_target = 19.0 + 4.2 * (width / 120.0) ** 0.25
+    dep_balance = deposition_rate / dep_target
+    line_width = _clip(width * (1.0 + 0.34 * np.maximum(0, spread) - 0.20 * np.maximum(0, narrowing) + 0.07 * (dep_balance - 1.0) + rng.normal(0, 0.025, n)), 22.0, 2100.0)
+    thickness = _clip(3.1 * (0.72 + 0.34 * dep_balance - 0.011 * (speed - 14.0) + rng.normal(0, 0.055, n)), 0.45, 12.0)
+    area = np.maximum((line_width * 1e-6) * (thickness * 1e-6), 1e-12)
+    initial_resistance = _clip((struct["path_length_mm"] * 1e-3) / (area * ink["nominal_conductivity_s_m"]) * (1 + edge_roughness / 92.0), 0.001, 5500.0)
+
+    over_temp = np.maximum(0.0, aging_temp - ink["temp_rating_c"]) / 250.0
+    temp_fraction = np.maximum(0.0, aging_temp - 25.0) / 475.0
+    thermal_dose = np.log1p(aging_hours) / np.log1p(1000.0) * temp_fraction
+    cycling_dose = np.log1p(thermal_cycles) / np.log1p(1000.0) * np.maximum(0, cycle_high - cycle_low) / 540.0
+    mechanical_dose = np.log1p(strain_cycles) / np.log1p(10000.0) * strain / 6.5
+    zone_bonding = (struct["coupon_zone"] == "bonding").astype(float)
+    long_line = (struct["coupon_structure"] == "meander_lines").astype(float)
+    overlap_sensitive = ((struct["overlap_area_mm2"] > 0) | (struct["bond_area_mm2"] > 0)).astype(float)
+
+    oxidation_index = _clip(
+        0.10
+        + 0.75 * thermal_dose
+        + 0.55 * over_temp
+        + ink["oxidation_bias"]
+        + 0.15 * np.maximum(0, edge_roughness - 8.0) / 28.0
+        + rng.normal(0.0, 0.045, n),
+        0.0,
+        1.0,
+    )
+    ct_void_fraction = _clip(
+        1.2
+        + 6.5 * np.maximum(0, narrowing)
+        + 2.4 * np.maximum(0, 1.0 - dep_balance)
+        + 3.2 * zone_bonding
+        + 1.8 * overlap_sensitive
+        + rng.normal(0.0, 0.75, n),
+        0.0,
+        23.0,
+    )
+
+    crack_drive = -2.25 + 2.6 * mechanical_dose + 1.9 * cycling_dose + 0.045 * edge_roughness + 0.85 * long_line + 0.85 * over_temp
+    crack_probability = _clip(1.0 / (1.0 + np.exp(-crack_drive)) + rng.normal(0.0, 0.025, n), 0.0, 1.0)
+    delamination_area = _clip(
+        2.0
+        + 28.0 * over_temp
+        + 18.0 * thermal_dose
+        + 14.0 * cycling_dose
+        + 1.4 * ct_void_fraction
+        + 0.19 * alignment
+        - 8.0 * ink["adhesion_bias"]
+        + rng.normal(0.0, 2.2, n),
+        0.0,
+        100.0,
+    )
+    sheet_drift = _clip(
+        1.2
+        + 38.0 * oxidation_index
+        + 22.0 * crack_probability
+        + 6.0 * thermal_dose
+        + 4.5 * np.maximum(0, narrowing)
+        + rng.normal(0.0, 2.0, n),
+        -3.0,
+        180.0,
+    )
+    contact_drift = _clip(
+        1.8
+        + 25.0 * oxidation_index
+        + 1.8 * ct_void_fraction
+        + 0.52 * delamination_area
+        + 16.0 * zone_bonding
+        + 3.0 * method_stress
+        + rng.normal(0.0, 2.6, n),
+        -2.0,
+        220.0,
+    )
+    adhesion = _clip(
+        31.0
+        + 4.8 * ink["adhesion_bias"]
+        - 0.19 * delamination_area
+        - 0.26 * ct_void_fraction
+        - 5.0 * over_temp
+        - 0.035 * alignment
+        + rng.normal(0.0, 1.5, n),
+        1.5,
+        42.0,
+    )
+    shear = _clip(
+        24.0
+        + 5.2 * ink["adhesion_bias"]
+        - 0.16 * delamination_area
+        - 0.40 * ct_void_fraction
+        - 3.2 * thermal_dose
+        - 2.6 * cycling_dose
+        + rng.normal(0.0, 1.3, n),
+        0.8,
+        36.0,
+    )
+    reliability = _clip(
+        100.0
+        - 0.30 * sheet_drift
+        - 0.27 * contact_drift
+        - 36.0 * crack_probability
+        - 0.42 * delamination_area
+        - 1.18 * ct_void_fraction
+        - 1.2 * np.maximum(0, 12.0 - shear)
+        + rng.normal(0.0, 2.0, n),
+        0.0,
+        100.0,
+    )
+
+    conditions = [
+        reliability >= 82.0,
+        crack_probability > 0.58,
+        delamination_area > 34.0,
+        ct_void_fraction > 11.0,
+        sheet_drift > 46.0,
+        contact_drift > 58.0,
+        shear < 12.0,
+    ]
+    choices = [
+        "pass",
+        "crack_fatigue",
+        "delamination",
+        "voiding",
+        "resistance_drift",
+        "contact_degradation",
+        "shear_failure",
+    ]
+    failure_mode = np.select(conditions, choices, default="marginal")
+
+    return pd.DataFrame(
+        {
+            "coupon_zone": struct["coupon_zone"],
+            "coupon_structure": struct["coupon_structure"],
+            "measurement_family": struct["measurement_family"],
+            "ink_family": ink["ink_family"],
+            "substrate": "single_alumina",
+            "test_method": methods,
+            "nominal_width_um": width,
+            "path_length_mm": struct["path_length_mm"],
+            "overlap_area_mm2": struct["overlap_area_mm2"],
+            "bond_area_mm2": struct["bond_area_mm2"],
+            "print_speed_mm_s": speed,
+            "atomizer_voltage_v": atomizer,
+            "carrier_flow_sccm": carrier,
+            "sheath_flow_sccm": sheath,
+            "substrate_temp_c": substrate_temp,
+            "cure_peak_temp_c": cure_peak,
+            "cure_time_min": cure_time,
+            "aging_temp_c": aging_temp,
+            "aging_hours": aging_hours,
+            "cycle_low_temp_c": cycle_low,
+            "cycle_high_temp_c": cycle_high,
+            "thermal_cycles": thermal_cycles,
+            "bend_radius_mm": bend_radius,
+            "strain_pct": strain,
+            "strain_cycles": strain_cycles,
+            "ct_void_fraction_pct": ct_void_fraction,
+            "oxidation_index": oxidation_index,
+            "edge_roughness_um": edge_roughness,
+            "alignment_error_um": alignment,
+            "line_width_um": line_width,
+            "thickness_um": thickness,
+            "initial_resistance_ohm": initial_resistance,
+            "sheet_resistance_drift_pct": sheet_drift,
+            "contact_resistance_drift_pct": contact_drift,
+            "crack_probability": crack_probability,
+            "delamination_area_pct": delamination_area,
+            "adhesion_strength_mpa": adhesion,
+            "void_fraction_pct": ct_void_fraction,
+            "post_aging_shear_mpa": shear,
+            "reliability_score": reliability,
+            "failure_mode": failure_mode,
+        }
+    )
+
+
 def generate_interface_dataset(n: int = 40_000, seed: int | None = 17) -> pd.DataFrame:
     rng = _rng(seed)
     material_idx = _choice_index(rng, n, len(MATERIAL_SETS))
@@ -661,6 +1062,45 @@ def default_interface_payload(pattern_prediction: dict[str, float] | None = None
     }
 
 
+def default_coupon_payload() -> dict[str, Any]:
+    structure = COUPON_STRUCTURES[4]
+    ink = COUPON_INKS[1]
+    return {
+        "coupon_zone": structure["zone"],
+        "coupon_structure": structure["id"],
+        "measurement_family": structure["measurement_family"],
+        "ink_family": ink["id"],
+        "substrate": "single_alumina",
+        "test_method": "thermal_cycling",
+        "nominal_width_um": structure["nominal_width_um"],
+        "path_length_mm": structure["path_length_mm"],
+        "overlap_area_mm2": structure["overlap_area_mm2"],
+        "bond_area_mm2": structure["bond_area_mm2"],
+        "print_speed_mm_s": 14.5,
+        "atomizer_voltage_v": 35.0,
+        "carrier_flow_sccm": 28.0,
+        "sheath_flow_sccm": 60.0,
+        "substrate_temp_c": 55.0,
+        "cure_peak_temp_c": 430.0,
+        "cure_time_min": 45.0,
+        "aging_temp_c": 500.0,
+        "aging_hours": 168.0,
+        "cycle_low_temp_c": -40.0,
+        "cycle_high_temp_c": 125.0,
+        "thermal_cycles": 250,
+        "bend_radius_mm": 28.0,
+        "strain_pct": 0.65,
+        "strain_cycles": 1000,
+        "ct_void_fraction_pct": 4.0,
+        "oxidation_index": 0.24,
+        "edge_roughness_um": 5.8,
+        "alignment_error_um": 18.0,
+        "line_width_um": structure["nominal_width_um"],
+        "thickness_um": 3.2,
+        "initial_resistance_ohm": 0.35,
+    }
+
+
 def complete_pattern_payload(payload: dict[str, Any]) -> dict[str, Any]:
     base = default_pattern_payload()
     base.update({k: v for k, v in payload.items() if v is not None})
@@ -694,3 +1134,21 @@ def complete_interface_payload(payload: dict[str, Any]) -> dict[str, Any]:
         if key not in payload:
             base[key] = device[key]
     return {k: base[k] for k in INTERFACE_FEATURES}
+
+
+def complete_coupon_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    base = default_coupon_payload()
+    base.update({k: v for k, v in payload.items() if v is not None})
+    structure = next((s for s in COUPON_STRUCTURES if s["id"] == base["coupon_structure"]), COUPON_STRUCTURES[4])
+    ink = next((i for i in COUPON_INKS if i["id"] == base["ink_family"]), COUPON_INKS[1])
+    base["coupon_zone"] = structure["zone"]
+    base["measurement_family"] = structure["measurement_family"]
+    base["substrate"] = "single_alumina"
+    for key in ("nominal_width_um", "path_length_mm", "overlap_area_mm2", "bond_area_mm2"):
+        if key not in payload:
+            base[key] = structure[key]
+    if "line_width_um" not in payload:
+        base["line_width_um"] = base["nominal_width_um"]
+    if "cure_peak_temp_c" not in payload:
+        base["cure_peak_temp_c"] = min(500.0, max(180.0, ink["temp_rating_c"] - 70.0))
+    return {k: base[k] for k in COUPON_FEATURES}

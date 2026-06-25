@@ -4,6 +4,8 @@ const state = {
   latestPattern: null,
   latestInterface: null,
   latestOptimizer: null,
+  latestCoupon: null,
+  latestDt: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -32,6 +34,9 @@ const postJson = async (url, values) => {
 const materialById = (id) => state.meta.material_sets.find((m) => m.set_id === id) || state.meta.material_sets[0];
 const patternById = (id) => state.meta.pattern_types.find((p) => p.id === id) || state.meta.pattern_types[0];
 const deviceById = (id) => state.meta.device_types.find((d) => d.id === id) || state.meta.device_types[0];
+const couponById = (id) => state.meta.coupon_structures.find((c) => c.id === id) || state.meta.coupon_structures[0];
+const couponInkById = (id) => state.meta.coupon_inks.find((i) => i.id === id) || state.meta.coupon_inks[0];
+const couponsByZone = (zone) => state.meta.coupon_structures.filter((c) => c.zone === zone);
 
 function setMode(mode) {
   state.mode = mode;
@@ -42,7 +47,15 @@ function setMode(mode) {
     pane.classList.toggle("active", pane.id === `pane-${mode}`);
   });
   $("specimenTitle").textContent =
-    mode === "pattern" ? "Pattern model" : mode === "interface" ? "RF interface model" : "Process optimizer";
+    mode === "pattern"
+      ? "Pattern model"
+      : mode === "interface"
+        ? "RF interface model"
+        : mode === "coupon"
+          ? "Integrated coupon reliability"
+          : mode === "dt"
+            ? "Digital twin feedback loop"
+            : "Process optimizer";
   renderAll();
 }
 
@@ -54,6 +67,14 @@ function populateControls() {
 
   $("patternType").innerHTML = state.meta.pattern_types.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
   $("deviceType").innerHTML = state.meta.device_types.map((d) => `<option value="${d.id}">${d.label}</option>`).join("");
+  const zoneAOptions = couponsByZone("interface").map((c) => `<option value="${c.id}">${c.label}</option>`).join("");
+  const zoneBOptions = couponsByZone("bonding").map((c) => `<option value="${c.id}">${c.label}</option>`).join("");
+  $("zoneAStructure").innerHTML = zoneAOptions;
+  $("zoneBStructure").innerHTML = zoneBOptions;
+  $("dtZoneAStructure").innerHTML = zoneAOptions;
+  $("dtZoneBStructure").innerHTML = zoneBOptions;
+  $("couponInk").innerHTML = state.meta.coupon_inks.map((i) => `<option value="${i.id}">${i.label}</option>`).join("");
+  $("testMethod").innerHTML = state.meta.coupon_test_methods.map((m) => `<option value="${m.id}">${m.label}</option>`).join("");
 
   const defaults = state.meta.defaults.pattern;
   materialSelect.value = defaults.material_set;
@@ -75,8 +96,43 @@ function populateControls() {
   $("traceLength").value = idef.trace_length_mm;
   $("candidateCount").value = 700;
 
+  const cdef = state.meta.defaults.coupon;
+  $("analysisZone").value = cdef.coupon_zone;
+  $("dtAnalysisZone").value = cdef.coupon_zone;
+  $("zoneAStructure").value = couponsByZone("interface")[0]?.id || "";
+  $("zoneBStructure").value = cdef.coupon_zone === "bonding" ? cdef.coupon_structure : couponsByZone("bonding")[0]?.id || "";
+  $("dtZoneAStructure").value = $("zoneAStructure").value;
+  $("dtZoneBStructure").value = $("zoneBStructure").value;
+  $("couponInk").value = cdef.ink_family;
+  $("testMethod").value = cdef.test_method;
+  $("agingTemp").value = cdef.aging_temp_c;
+  $("agingHours").value = cdef.aging_hours;
+  $("thermalCycles").value = cdef.thermal_cycles;
+  $("strainPct").value = cdef.strain_pct;
+  $("voidFraction").value = cdef.ct_void_fraction_pct;
+  $("dtCandidateCount").value = 600;
+
   syncLabels();
   renderMaterialStack();
+}
+
+function activeCouponId(prefix = "") {
+  const zoneControl = prefix === "dt" ? $("dtAnalysisZone") : $("analysisZone");
+  const zone = zoneControl.value;
+  if (zone === "bonding") return prefix === "dt" ? $("dtZoneBStructure").value : $("zoneBStructure").value;
+  return prefix === "dt" ? $("dtZoneAStructure").value : $("zoneAStructure").value;
+}
+
+function syncCouponSelectors(sourcePrefix = "") {
+  if (sourcePrefix === "dt") {
+    $("analysisZone").value = $("dtAnalysisZone").value;
+    $("zoneAStructure").value = $("dtZoneAStructure").value;
+    $("zoneBStructure").value = $("dtZoneBStructure").value;
+  } else {
+    $("dtAnalysisZone").value = $("analysisZone").value;
+    $("dtZoneAStructure").value = $("zoneAStructure").value;
+    $("dtZoneBStructure").value = $("zoneBStructure").value;
+  }
 }
 
 function syncLabels() {
@@ -93,6 +149,12 @@ function syncLabels() {
   $("deviceGapOut").textContent = `${fmt($("deviceGap").value, 0)} um`;
   $("traceLengthOut").textContent = `${fmt($("traceLength").value, 1)} mm`;
   $("candidateOut").textContent = `${fmt($("candidateCount").value, 0)}`;
+  $("agingTempOut").textContent = `${fmt($("agingTemp").value, 0)} C`;
+  $("agingHoursOut").textContent = `${fmt($("agingHours").value, 0)} h`;
+  $("thermalCyclesOut").textContent = `${fmt($("thermalCycles").value, 0)}`;
+  $("strainOut").textContent = `${fmt($("strainPct").value, 2)}%`;
+  $("voidOut").textContent = `${fmt($("voidFraction").value, 1)}%`;
+  $("dtCandidateOut").textContent = `${fmt($("dtCandidateCount").value, 0)}`;
 }
 
 function renderMaterialStack() {
@@ -205,6 +267,49 @@ function buildInterfacePayload() {
   };
 }
 
+function couponBasePayload() {
+  const coupon = couponById(activeCouponId(state.mode === "dt" ? "dt" : ""));
+  const latestPattern = state.latestPattern;
+  const widthRatio = latestPattern ? latestPattern.prediction.line_width_um / latestPattern.input.nominal_width_um : 1;
+  const rough = latestPattern ? latestPattern.input.edge_roughness_um : 5.8;
+  const thickness = latestPattern ? latestPattern.prediction.thickness_um : 3.2;
+  const lineWidth = coupon.nominal_width_um * widthRatio;
+  const conductivity = couponInkById($("couponInk").value).nominal_conductivity_s_m;
+  const resistance = (coupon.path_length_mm * 1e-3) / Math.max((lineWidth * 1e-6) * (thickness * 1e-6) * conductivity, 1e-12);
+  const agingTemp = Number($("agingTemp").value);
+  return {
+    coupon_structure: coupon.id,
+    ink_family: $("couponInk").value,
+    test_method: $("testMethod").value,
+    nominal_width_um: coupon.nominal_width_um,
+    path_length_mm: coupon.path_length_mm,
+    overlap_area_mm2: coupon.overlap_area_mm2,
+    bond_area_mm2: coupon.bond_area_mm2,
+    print_speed_mm_s: Number($("printSpeed").value),
+    atomizer_voltage_v: Number($("atomizerVoltage").value),
+    carrier_flow_sccm: Number($("carrierFlow").value),
+    sheath_flow_sccm: Number($("sheathFlow").value),
+    substrate_temp_c: 55,
+    cure_peak_temp_c: $("couponInk").value === "high_temp_500c" ? 430 : 210,
+    cure_time_min: 45,
+    aging_temp_c: agingTemp,
+    aging_hours: Number($("agingHours").value),
+    cycle_low_temp_c: -40,
+    cycle_high_temp_c: agingTemp >= 350 ? 500 : 125,
+    thermal_cycles: Number($("thermalCycles").value),
+    bend_radius_mm: Math.max(3, 18 / Math.max(Number($("strainPct").value), 0.1)),
+    strain_pct: Number($("strainPct").value),
+    strain_cycles: Number($("thermalCycles").value) * 4,
+    ct_void_fraction_pct: Number($("voidFraction").value),
+    oxidation_index: Math.min(0.95, Math.max(0.04, (agingTemp - 25) / 760 + Number($("agingHours").value) / 2800)),
+    edge_roughness_um: rough,
+    alignment_error_um: 18 + Number($("voidFraction").value) * 1.2,
+    line_width_um: lineWidth,
+    thickness_um: thickness,
+    initial_resistance_ohm: resistance,
+  };
+}
+
 async function runPattern() {
   const result = await postJson("/api/predict/pattern", buildPatternPayload());
   state.latestPattern = result;
@@ -225,11 +330,35 @@ async function runOptimizer() {
   renderAll();
 }
 
+async function runCoupon(shouldRender = true) {
+  state.latestCoupon = await postJson("/api/predict/coupon", couponBasePayload());
+  if (shouldRender) renderAll();
+}
+
+async function runDt() {
+  const payload = couponBasePayload();
+  payload.candidates = Number($("dtCandidateCount").value);
+  state.latestDt = await postJson("/api/digital-twin/feedback", payload);
+  state.latestCoupon = state.latestDt.baseline;
+  renderAll();
+}
+
 function metricCard(label, value, sub = "") {
   return `<div class="metric-card"><span>${label}</span><strong>${value}</strong>${sub ? `<small>${sub}</small>` : ""}</div>`;
 }
 
 function renderMetrics() {
+  if ((state.mode === "coupon" || state.mode === "dt") && state.latestCoupon) {
+    const p = state.latestCoupon.prediction;
+    $("primaryMetrics").innerHTML = [
+      metricCard("Reliability", `${fmt(p.reliability_score, 1)}`, intervalText(state.latestCoupon, "reliability_score")),
+      metricCard("Sheet drift", `${fmt(p.sheet_resistance_drift_pct, 1)}%`, intervalText(state.latestCoupon, "sheet_resistance_drift_pct")),
+      metricCard("Void fraction", `${fmt(p.void_fraction_pct, 1)}%`, intervalText(state.latestCoupon, "void_fraction_pct")),
+      metricCard("Shear strength", `${fmt(p.post_aging_shear_mpa, 1)} MPa`, intervalText(state.latestCoupon, "post_aging_shear_mpa")),
+    ].join("");
+    return;
+  }
+
   if (state.mode === "interface" && state.latestInterface) {
     const p = state.latestInterface.prediction;
     $("primaryMetrics").innerHTML = [
@@ -267,6 +396,18 @@ function intervalText(result, key) {
 }
 
 function renderDecisionState() {
+  if ((state.mode === "coupon" || state.mode === "dt") && state.latestCoupon) {
+    const c = state.latestCoupon;
+    const p = c.prediction;
+    $("decisionState").innerHTML = `
+      <div class="state-row"><span>Coupon failure mode</span><strong>${c.failure_mode.replace("_", " ")}</strong></div>
+      <div class="state-row"><span>Structure family</span><strong>${c.input.coupon_structure.replaceAll("_", " ")}</strong></div>
+      <div class="state-row"><span>Reliability score</span><strong>${fmt(p.reliability_score, 1)} / 100</strong></div>
+      <div class="state-row"><span>Contact drift</span><strong>${fmt(p.contact_resistance_drift_pct, 1)}%</strong></div>
+    `;
+    return;
+  }
+
   const pattern = state.latestPattern;
   const iface = state.latestInterface;
   if (!pattern) {
@@ -307,13 +448,40 @@ function renderDefectBars() {
     .join("");
 }
 
+function renderFailureBars() {
+  const probs = state.latestCoupon?.failure_probabilities;
+  if (!probs) {
+    $("failureBars").innerHTML = "";
+    return;
+  }
+  const rows = Object.entries(probs).sort((a, b) => b[1] - a[1]);
+  $("failureBars").innerHTML = rows
+    .map(([label, value]) => {
+      const pct = Math.round(value * 100);
+      const warn = label !== "pass" && pct > 14 ? "warn" : "";
+      return `
+        <div class="bar-row">
+          <span class="bar-label">${label.replace("_", " ")}</span>
+          <span class="bar-track"><span class="bar-fill ${warn}" style="width:${pct}%"></span></span>
+          <span class="bar-value">${pct}%</span>
+        </div>
+      `;
+    })
+    .join("");
+}
+
 function renderBenchmarks() {
   const metrics = state.meta.metrics;
   if (!metrics?.benchmarks) {
     $("benchmarkBars").innerHTML = "";
     return;
   }
-  const source = state.mode === "interface" ? metrics.benchmarks.interface_rf : metrics.benchmarks.pattern_trace;
+  const source =
+    state.mode === "interface"
+      ? metrics.benchmarks.interface_rf
+      : state.mode === "coupon" || state.mode === "dt"
+        ? metrics.benchmarks.coupon_reliability
+        : metrics.benchmarks.pattern_trace;
   const entries = Object.entries(source).sort((a, b) => b[1].r2_mean - a[1].r2_mean);
   $("benchmarkBars").innerHTML = entries
     .map(([name, item]) => {
@@ -349,6 +517,28 @@ function renderOptimizer() {
     .join("");
 }
 
+function renderDtFeedback() {
+  const dt = state.latestDt;
+  if (!dt) {
+    $("dtFeedback").innerHTML = "";
+    return;
+  }
+  const actions = dt.actions.map((a) => `<div class="optimizer-item"><strong>Action</strong><span>${a}</span></div>`).join("");
+  const recipes = dt.top
+    .slice(0, 3)
+    .map((item, index) => {
+      const s = item.settings;
+      return `
+        <div class="optimizer-item">
+          <strong>#${index + 1} · pass ${fmt(item.pass_probability * 100, 0)}% · reliability +${fmt(item.improvement.reliability_score, 1)}</strong>
+          <span>${fmt(s.atomizer_voltage_v, 1)} V, ${fmt(s.carrier_flow_sccm, 1)} / ${fmt(s.sheath_flow_sccm, 1)} sccm, cure ${fmt(s.cure_peak_temp_c, 0)} C for ${fmt(s.cure_time_min, 0)} min, void target ${fmt(s.ct_void_fraction_pct, 1)}%</span>
+        </div>
+      `;
+    })
+    .join("");
+  $("dtFeedback").innerHTML = actions + recipes;
+}
+
 function renderSpecimen() {
   const svg = $("specimenSvg");
   const material = materialById($("materialSet").value);
@@ -363,12 +553,51 @@ function renderSpecimen() {
   if (state.mode === "interface") {
     const device = deviceById($("deviceType").value);
     svg.innerHTML = device.id === "cpw" ? cpwSvg(color, glow, activeInterface) : patchSvg(color, glow, activeInterface);
+  } else if (state.mode === "coupon" || state.mode === "dt") {
+    svg.innerHTML = couponSvg();
   } else {
     const pattern = $("patternType").value;
     if (pattern === "dogbone") svg.innerHTML = dogboneSvg(color, glow, clog);
     else if (pattern === "meander") svg.innerHTML = meanderSvg(color, glow, clog);
     else svg.innerHTML = padSvg(color, glow, spread);
   }
+}
+
+function couponSvg() {
+  const coupon = couponById(activeCouponId(state.mode === "dt" ? "dt" : ""));
+  const ink = $("couponInk").value === "high_temp_500c" ? "#c8a13a" : "#62686a";
+  const baseline = "#62686a";
+  const p = state.latestCoupon?.prediction;
+  const score = p ? fmt(p.reliability_score, 1) : "pending";
+  const stress = Math.min(1, Number($("agingTemp").value) / 500 + Number($("voidFraction").value) / 30);
+  return `
+    <defs>
+      <linearGradient id="alumina" x1="0" x2="1">
+        <stop offset="0" stop-color="#fafafa"/>
+        <stop offset="1" stop-color="#eef4e8"/>
+      </linearGradient>
+      <filter id="stress"><feGaussianBlur stdDeviation="${fmt(2 + stress * 6, 1)}"/></filter>
+    </defs>
+    <rect x="28" y="36" width="704" height="340" rx="8" fill="url(#alumina)" stroke="#20333a" stroke-width="2"/>
+    <line x1="380" y1="52" x2="380" y2="360" stroke="#8da1a6" stroke-width="2" stroke-dasharray="8 8"/>
+    <text x="70" y="76" fill="#1256a0" font-size="17" font-weight="800">Zone A interface structures</text>
+    <text x="440" y="76" fill="#267237" font-size="17" font-weight="800">Zone B bonding structures</text>
+    <path d="M80 128h160M80 154h160M80 180h160" stroke="${baseline}" stroke-width="8" stroke-linecap="square"/>
+    <path d="M80 222h160M80 250h160M80 278h160" stroke="#c8a13a" stroke-width="8" stroke-linecap="square"/>
+    <path d="M270 122c68 0 68 32 0 32s-68 32 0 32s68 32 0 32s-68 32 0 32s68 32 0 32" fill="none" stroke="${ink}" stroke-width="10" stroke-linecap="round"/>
+    <rect x="318" y="122" width="26" height="26" fill="${baseline}"/><rect x="318" y="172" width="26" height="26" fill="${ink}"/>
+    <rect x="318" y="222" width="26" height="26" fill="${baseline}"/><rect x="318" y="272" width="26" height="26" fill="${ink}"/>
+    <path d="M420 132h134M420 188h134M420 244h134" stroke="${ink}" stroke-width="9"/>
+    <rect x="404" y="118" width="28" height="28" fill="${baseline}"/><rect x="552" y="118" width="28" height="28" fill="${baseline}"/>
+    <rect x="404" y="230" width="28" height="28" fill="${ink}"/><rect x="552" y="230" width="28" height="28" fill="${ink}"/>
+    <rect x="610" y="114" width="64" height="64" fill="${baseline}"/><rect x="628" y="132" width="28" height="28" fill="${ink}"/>
+    <path d="M604 246h54v-24h38v74h-38v-24h-54z" fill="${ink}"/>
+    <rect x="52" y="54" width="24" height="24" fill="#6b6f70"/><rect x="684" y="54" width="24" height="24" fill="#6b6f70"/>
+    <rect x="52" y="332" width="24" height="24" fill="#6b6f70"/><rect x="684" y="332" width="24" height="24" fill="#6b6f70"/>
+    <circle cx="380" cy="54" r="9" fill="none" stroke="#111" stroke-width="2"/><circle cx="380" cy="358" r="9" fill="none" stroke="#111" stroke-width="2"/>
+    <rect x="76" y="90" width="615" height="226" fill="#d66b42" opacity="${fmt(stress * 0.08, 2)}" filter="url(#stress)"/>
+    <text x="54" y="396" fill="#20333a" font-size="17" font-weight="800">${coupon.label} · reliability ${score}</text>
+  `;
 }
 
 function defs(glow) {
@@ -463,8 +692,10 @@ function renderAll() {
   renderMetrics();
   renderDecisionState();
   renderDefectBars();
+  renderFailureBars();
   renderBenchmarks();
   renderOptimizer();
+  renderDtFeedback();
 }
 
 function bindEvents() {
@@ -480,12 +711,27 @@ function bindEvents() {
   $("materialSet").addEventListener("change", renderMaterialStack);
   $("patternType").addEventListener("change", applyPatternDefaults);
   $("deviceType").addEventListener("change", applyDeviceDefaults);
+  ["analysisZone", "zoneAStructure", "zoneBStructure"].forEach((id) => {
+    $(id).addEventListener("change", () => {
+      syncCouponSelectors("");
+      renderSpecimen();
+    });
+  });
+  ["dtAnalysisZone", "dtZoneAStructure", "dtZoneBStructure"].forEach((id) => {
+    $(id).addEventListener("change", () => {
+      syncCouponSelectors("dt");
+      renderSpecimen();
+    });
+  });
   $("runPattern").addEventListener("click", () => runPattern().catch(showError));
   $("runInterface").addEventListener("click", () => runInterface().catch(showError));
   $("runOptimizer").addEventListener("click", () => runOptimizer().catch(showError));
+  $("runCoupon").addEventListener("click", () => runCoupon().catch(showError));
+  $("runDt").addEventListener("click", () => runDt().catch(showError));
 }
 
 function showError(error) {
+  console.error(error);
   $("decisionState").innerHTML = `<div class="state-row"><span>Error</span><strong>${String(error.message || error).slice(0, 220)}</strong></div>`;
 }
 
@@ -497,6 +743,7 @@ async function boot() {
   populateControls();
   bindEvents();
   await runPattern();
+  await runCoupon(false);
   await runOptimizer();
   renderAll();
 }

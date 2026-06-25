@@ -140,7 +140,7 @@ h1 {
 
 .mode-toggle {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   padding: 4px;
   background: #eef2ee;
@@ -151,11 +151,15 @@ h1 {
 .mode-button {
   border: 0;
   border-radius: 6px;
-  padding: 9px 8px;
+  padding: 9px 6px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   min-height: 38px;
+  line-height: 1.15;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .mode-button.active {
@@ -205,6 +209,8 @@ select {
   background: white;
   color: var(--ink);
   padding: 0 10px;
+  min-width: 0;
+  text-overflow: ellipsis;
 }
 
 input[type="range"] {
@@ -221,6 +227,9 @@ input[type="range"] {
   font-weight: 800;
   cursor: pointer;
   margin-top: 4px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .primary-action:hover {
@@ -356,7 +365,7 @@ h3 {
 
 .pipeline {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin-top: 12px;
 }
@@ -374,6 +383,10 @@ h3 {
 
 .pipeline div:nth-child(3) {
   border-left-color: var(--violet);
+}
+
+.pipeline div:nth-child(4) {
+  border-left-color: var(--green);
 }
 
 .pipeline span,
@@ -522,5 +535,9 @@ h3 {
 
   .specimen-frame {
     height: 340px;
+  }
+
+  .mode-toggle {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
