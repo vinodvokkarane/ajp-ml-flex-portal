@@ -62,7 +62,7 @@ function setMode(mode) {
 function populateControls() {
   const materialSelect = $("materialSet");
   materialSelect.innerHTML = state.meta.material_sets
-    .map((m) => `<option value="${m.set_id}">${m.label} · ${m.stack}</option>`)
+    .map((m) => `<option value="${m.set_id}">${m.label} - ${m.stack}</option>`)
     .join("");
 
   $("patternType").innerHTML = state.meta.pattern_types.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
@@ -509,7 +509,7 @@ function renderOptimizer() {
       const p = item.prediction;
       return `
         <div class="optimizer-item">
-          <strong>#${index + 1} · score ${fmt(item.score, 1)} · nominal ${fmt(item.nominal_probability * 100, 0)}%</strong>
+          <strong>#${index + 1} - score ${fmt(item.score, 1)} - nominal ${fmt(item.nominal_probability * 100, 0)}%</strong>
           <span>${fmt(s.atomizer_voltage_v, 1)} V atomizer, ${fmt(s.carrier_flow_sccm, 1)} / ${fmt(s.sheath_flow_sccm, 1)} sccm flow, ${fmt(s.print_speed_mm_s, 1)} mm/s, ${fmt(p.line_width_um, 1)} um line</span>
         </div>
       `;
@@ -530,7 +530,7 @@ function renderDtFeedback() {
       const s = item.settings;
       return `
         <div class="optimizer-item">
-          <strong>#${index + 1} · pass ${fmt(item.pass_probability * 100, 0)}% · reliability +${fmt(item.improvement.reliability_score, 1)}</strong>
+          <strong>#${index + 1} - pass ${fmt(item.pass_probability * 100, 0)}% - reliability +${fmt(item.improvement.reliability_score, 1)}</strong>
           <span>${fmt(s.atomizer_voltage_v, 1)} V, ${fmt(s.carrier_flow_sccm, 1)} / ${fmt(s.sheath_flow_sccm, 1)} sccm, cure ${fmt(s.cure_peak_temp_c, 0)} C for ${fmt(s.cure_time_min, 0)} min, void target ${fmt(s.ct_void_fraction_pct, 1)}%</span>
         </div>
       `;
@@ -596,7 +596,7 @@ function couponSvg() {
     <rect x="52" y="332" width="24" height="24" fill="#6b6f70"/><rect x="684" y="332" width="24" height="24" fill="#6b6f70"/>
     <circle cx="380" cy="54" r="9" fill="none" stroke="#111" stroke-width="2"/><circle cx="380" cy="358" r="9" fill="none" stroke="#111" stroke-width="2"/>
     <rect x="76" y="90" width="615" height="226" fill="#d66b42" opacity="${fmt(stress * 0.08, 2)}" filter="url(#stress)"/>
-    <text x="54" y="396" fill="#20333a" font-size="17" font-weight="800">${coupon.label} · reliability ${score}</text>
+    <text x="54" y="396" fill="#20333a" font-size="17" font-weight="800">${coupon.label} - reliability ${score}</text>
   `;
 }
 
@@ -662,7 +662,7 @@ function patchSvg(color, glow, iface) {
     <path d="M204 116h188v142h-74v92h-38v-92h-76z" fill="${color}"/>
     <path d="M470 146h170M470 208h170M470 270h170" stroke="#29484f" stroke-width="22" opacity="0.22"/>
     <path d="M470 146h170M470 208h170M470 270h170" stroke="${color}" stroke-width="8"/>
-    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">X-band patch antenna · ${res}</text>
+    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">X-band patch antenna - ${res}</text>
   `;
 }
 
@@ -674,7 +674,7 @@ function cpwSvg(color, glow, iface) {
     <path d="M120 170h520M120 250h520" stroke="${color}" stroke-width="16" stroke-linecap="round"/>
     <path d="M120 210h520" stroke="${color}" stroke-width="24" stroke-linecap="round"/>
     <path d="M92 124h44v172H92zM624 124h44v172h-44z" fill="${color}"/>
-    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">coplanar waveguide · ${loss}</text>
+    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">coplanar waveguide - ${loss}</text>
   `;
 }
 
