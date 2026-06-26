@@ -8,4 +8,8 @@ services:
     autoDeploy: true
     envVars:
       - key: PYTHON_VERSION
-        value: 3.12.10
+        value: 3.11.11
+      - key: PIP_ONLY_BINARY
+        value: ":all:"
+      - key: PIP_PREFER_BINARY
+        value: "1"
