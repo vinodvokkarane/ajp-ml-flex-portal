@@ -61,6 +61,26 @@ uvicorn app.main:app --host 0.0.0.0 --port $PORT
 
 The saved model artifacts in `model_artifacts/` are loaded at startup. Re-run `scripts/train_models.py` after changing the generator or training code.
 
+## Hugging Face Spaces Deployment
+
+For the full ML-enabled `main` branch, use a Hugging Face Space with Docker.
+
+Create the Space with:
+
+- Space SDK: Docker
+- Hardware: CPU basic
+- Visibility: Public or Private
+- App port: 7860
+- Branch: main
+
+The repo includes a Spaces-ready `Dockerfile`. It pins Python to `3.11-slim`, forces binary wheels for scientific Python packages, installs `requirements.txt`, and starts the FastAPI app with:
+
+```bash
+uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860} --proxy-headers --forwarded-allow-ips='*'
+```
+
+No training step is required during deploy. The committed `model_artifacts/model_bundle.joblib` is loaded at runtime.
+
 ## Data Notes
 
 The training run creates synthetic rows from physics-inspired relationships and domain-randomized process, thermal, mechanical, inspection, and bonding settings. The default run generates 240,000 rows: 80,000 printed-pattern rows, 40,000 RF/interface rows, and 120,000 integrated-coupon rows.
