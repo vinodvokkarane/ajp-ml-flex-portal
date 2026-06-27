@@ -1,3 +1,3 @@
-"""Synthetic AJP modeling utilities for the ML-Flex portal."""
+"""Synthetic reliability modeling utilities for the BOND-AI portal."""
 
 __all__ = ["synthetic"]

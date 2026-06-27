@@ -32,7 +32,7 @@ from mlflex.synthetic import (  # noqa: E402
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train synthetic AJP/FHE demonstration models.")
+    parser = argparse.ArgumentParser(description="Train synthetic BOND-AI interface and bonding coupon models.")
     parser.add_argument("--pattern-samples", type=int, default=80_000)
     parser.add_argument("--interface-samples", type=int, default=40_000)
     parser.add_argument("--coupon-samples", type=int, default=120_000)
@@ -65,7 +65,7 @@ def main() -> None:
     print("Benchmarking model families on sampled folds...")
     benchmarks = {
         "pattern_trace": benchmark_regressors(pattern_df, PATTERN_FEATURES, PATTERN_TARGETS, seed=args.seed + 40),
-        "interface_rf": benchmark_regressors(interface_df, INTERFACE_FEATURES, INTERFACE_TARGETS, seed=args.seed + 50),
+        "cpw_validation": benchmark_regressors(interface_df, INTERFACE_FEATURES, INTERFACE_TARGETS, seed=args.seed + 50),
         "coupon_reliability": benchmark_regressors(coupon_df, COUPON_FEATURES, COUPON_TARGETS, seed=args.seed + 60),
     }
 
@@ -83,16 +83,16 @@ def main() -> None:
         "benchmarks": benchmarks,
         "model_card": {
             "served_models": {
-                "defect_classifier": "HistGradientBoostingClassifier with material/process/sensor feature fusion",
-                "trace_regressor": "HistGradientBoostingRegressor multi-output wrapper with empirical conformal residual intervals",
-                "interface_regressor": "HistGradientBoostingRegressor surrogate for X-band patch antenna and CPW metrics",
-                "coupon_digital_twin": "Tree ensemble reliability surrogate for the integrated alumina interface and bonding coupon",
+                "print_process_classifier": "HistGradientBoostingClassifier for process anomaly states that feed coupon geometry descriptors",
+                "trace_regressor": "HistGradientBoostingRegressor multi-output wrapper for coupon line width, thickness, resistance, and quality",
+                "cpw_validation_regressor": "HistGradientBoostingRegressor surrogate for blind CPW validation metrics on alumina",
+                "coupon_digital_twin": "Tree ensemble reliability surrogate for Zone A interface and Zone B bonding structures",
             },
             "research_upgrade_path": [
-                "Tabular foundation models for small real datasets after lab data collection",
-                "SAM 2 or DINOv2-style visual encoders for raw high-speed camera frames",
-                "Temporal Fusion Transformer for high-rate sensor streams",
-                "Bayesian multi-objective optimization for active experiment selection",
+                "Physics-informed tabular learning after coupon data collection",
+                "Visual encoders for optical, SEM, EDS, FIB, and CT inspection imagery",
+                "Temporal models for in-situ electrical drift during aging and thermal cycling",
+                "Uncertainty-guided active learning for next coupon and condition selection",
             ],
         },
     }

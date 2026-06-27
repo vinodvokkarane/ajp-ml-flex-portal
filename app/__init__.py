@@ -1,1 +1,1 @@
-"""FastAPI app package for the ML-Flex portal."""
+"""FastAPI app package for the BOND-AI portal."""

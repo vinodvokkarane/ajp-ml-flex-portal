@@ -23,75 +23,27 @@ class MaterialSet:
 
 MATERIAL_SETS: tuple[MaterialSet, ...] = (
     MaterialSet(
-        "set_1",
-        "Set 1",
-        "Novacentrix HPS-108AE1",
-        "Kapton",
-        "Ag ink on Kapton",
+        "ag_np_alumina",
+        "Baseline Ag-NP",
+        "Baseline Ag-NP ink",
+        "500C-capable alumina",
+        "Baseline Ag-NP ink on alumina",
         1.05e7,
         31.0,
-        38.0,
-        3.4,
+        41.0,
+        9.8,
         0.02,
     ),
     MaterialSet(
-        "set_2",
-        "Set 2",
-        "Novacentrix HPS-108AE1",
-        "FR4",
-        "Ag ink on FR4",
-        9.6e6,
-        31.0,
-        45.0,
-        4.15,
-        -0.01,
-    ),
-    MaterialSet(
-        "set_3",
-        "Set 3",
-        "Electroninks E615",
-        "Kapton",
-        "E615 on Kapton",
-        8.9e6,
-        39.0,
-        38.0,
-        3.4,
-        0.04,
-    ),
-    MaterialSet(
-        "set_4",
-        "Set 4",
-        "Electroninks E615",
-        "FR4",
-        "E615 on FR4",
-        8.1e6,
-        39.0,
-        45.0,
-        4.15,
-        0.01,
-    ),
-    MaterialSet(
-        "set_5",
-        "Set 5",
-        "Novacentrix HPS-108AE1",
-        "NEA 121 dielectric stack",
-        "Ag ink over NEA 121 dielectric",
-        8.8e6,
-        33.0,
-        34.0,
-        3.05,
-        0.07,
-    ),
-    MaterialSet(
-        "set_6",
-        "Set 6",
-        "Electroninks E615",
-        "NEA 121 dielectric stack",
-        "E615 over NEA 121 dielectric",
+        "ani_alumina",
+        "ANI 500C",
+        "ANI 500C conductive ink",
+        "500C-capable alumina",
+        "ANI 500C conductive ink on alumina",
         7.7e6,
         41.0,
-        34.0,
-        3.05,
+        41.0,
+        9.8,
         0.09,
     ),
 )
@@ -127,16 +79,8 @@ PATTERN_TYPES: tuple[dict[str, Any], ...] = (
 
 DEVICE_TYPES: tuple[dict[str, Any], ...] = (
     {
-        "id": "patch_antenna",
-        "label": "X-band patch antenna",
-        "nominal_width_um": 4300.0,
-        "nominal_gap_um": 600.0,
-        "trace_length_mm": 10.8,
-        "substrate_thickness_mm": 0.508,
-    },
-    {
         "id": "cpw",
-        "label": "X-band coplanar waveguide",
+        "label": "Blind CPW validation structure",
         "nominal_width_um": 360.0,
         "nominal_gap_um": 180.0,
         "trace_length_mm": 31.0,
@@ -147,9 +91,10 @@ DEVICE_TYPES: tuple[dict[str, Any], ...] = (
 COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     {
         "id": "straight_lines",
-        "label": "Zone A straight lines",
+        "label": "Straight lines",
         "zone": "interface",
         "measurement_family": "sheet_resistance",
+        "purpose": "Resistance drift",
         "nominal_width_um": 95.0,
         "path_length_mm": 64.0,
         "overlap_area_mm2": 0.0,
@@ -157,9 +102,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "meander_lines",
-        "label": "Zone A meander lines",
+        "label": "Meander lines",
         "zone": "interface",
         "measurement_family": "crack_fatigue",
+        "purpose": "Crack and fatigue",
         "nominal_width_um": 78.0,
         "path_length_mm": 135.0,
         "overlap_area_mm2": 0.0,
@@ -167,9 +113,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "square_pads",
-        "label": "Zone A square pads",
+        "label": "Square pads",
         "zone": "interface",
         "measurement_family": "adhesion_delamination",
+        "purpose": "Adhesion and delamination",
         "nominal_width_um": 520.0,
         "path_length_mm": 6.0,
         "overlap_area_mm2": 0.0,
@@ -177,9 +124,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "overlap_pads",
-        "label": "Zone A overlap pads",
+        "label": "Overlap pads",
         "zone": "interface",
         "measurement_family": "interface_adhesion",
+        "purpose": "Interface adhesion",
         "nominal_width_um": 740.0,
         "path_length_mm": 10.0,
         "overlap_area_mm2": 1.15,
@@ -187,9 +135,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "daisy_chain_kelvin",
-        "label": "Zone B daisy-chain Kelvin",
+        "label": "Daisy-chain Kelvin",
         "zone": "bonding",
         "measurement_family": "contact_resistance",
+        "purpose": "Contact resistance",
         "nominal_width_um": 135.0,
         "path_length_mm": 92.0,
         "overlap_area_mm2": 0.22,
@@ -197,9 +146,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "dummy_die_attach",
-        "label": "Zone B dummy die attach",
+        "label": "Dummy die / chip attach",
         "zone": "bonding",
         "measurement_family": "bond_reliability",
+        "purpose": "Bond reliability",
         "nominal_width_um": 1100.0,
         "path_length_mm": 4.5,
         "overlap_area_mm2": 0.0,
@@ -207,9 +157,10 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "shear_test_pads",
-        "label": "Zone B shear test pads",
+        "label": "Shear test pads",
         "zone": "bonding",
         "measurement_family": "shear_strength",
+        "purpose": "Adhesion strength",
         "nominal_width_um": 880.0,
         "path_length_mm": 7.2,
         "overlap_area_mm2": 0.58,
@@ -220,7 +171,7 @@ COUPON_STRUCTURES: tuple[dict[str, Any], ...] = (
 COUPON_INKS: tuple[dict[str, Any], ...] = (
     {
         "id": "baseline_ag",
-        "label": "Baseline Ag ink",
+        "label": "Baseline Ag-NP ink",
         "nominal_conductivity_s_m": 1.05e7,
         "temp_rating_c": 250.0,
         "oxidation_bias": 0.20,
@@ -228,7 +179,7 @@ COUPON_INKS: tuple[dict[str, Any], ...] = (
     },
     {
         "id": "high_temp_500c",
-        "label": "500C high-temperature ink",
+        "label": "ANI 500C conductive ink",
         "nominal_conductivity_s_m": 7.8e6,
         "temp_rating_c": 500.0,
         "oxidation_bias": -0.12,
@@ -238,13 +189,22 @@ COUPON_INKS: tuple[dict[str, Any], ...] = (
 
 COUPON_TEST_METHODS: tuple[dict[str, Any], ...] = (
     {"id": "electrical_4pt", "label": "Electrical 4-point / Kelvin", "stress_bias": 0.02},
-    {"id": "thermal_aging", "label": "Thermal aging", "stress_bias": 0.18},
-    {"id": "thermal_cycling", "label": "Thermal cycling", "stress_bias": 0.24},
+    {"id": "thermal_aging", "label": "Thermal aging up to 500C", "stress_bias": 0.18},
+    {"id": "thermal_cycling", "label": "Thermal cycling -40C to 500C", "stress_bias": 0.24},
     {"id": "mechanical_bending", "label": "Mechanical bending / strain", "stress_bias": 0.22},
     {"id": "shear_pull", "label": "Shear / pull testing", "stress_bias": 0.20},
     {"id": "xray_ct", "label": "X-ray / CT", "stress_bias": 0.05},
     {"id": "optical_sem_eds_fib", "label": "Optical / SEM / EDS / FIB", "stress_bias": 0.04},
 )
+
+REPRESENTATIVE_CONDITIONS: tuple[str, ...] = (
+    "Thermal aging at 150C, 250C, 350C, and 500C",
+    "Thermal cycling from -40C to 125C and room temperature to 500C",
+    "Static bend, cyclic bend, and strain cycling",
+    "In-situ electrical monitoring during aging and cycling",
+)
+
+QUALIFICATION_DECISIONS: tuple[str, ...] = ("PASS", "MARGINAL", "DEFER_TO_INSPECTION")
 
 
 PATTERN_FEATURES = [
@@ -365,12 +325,27 @@ COUPON_TARGETS = [
 
 def metadata() -> dict[str, Any]:
     return {
+        "portal_name": "BOND-AI",
+        "platform": {
+            "title": "Integrated Interface-and-Bonding Test Platform",
+            "substrate": "Single 500C-capable alumina coupon",
+            "objective": (
+                "Link printed-interface degradation in Zone A to bond-joint reliability "
+                "in Zone B using common inks, process settings, and characterization data."
+            ),
+            "outcome": (
+                "Unified reliability methodology for baseline Ag-NP and ANI high-temperature "
+                "conductive inks on alumina."
+            ),
+        },
         "material_sets": [m.__dict__ for m in MATERIAL_SETS],
         "pattern_types": list(PATTERN_TYPES),
         "device_types": list(DEVICE_TYPES),
         "coupon_structures": list(COUPON_STRUCTURES),
         "coupon_inks": list(COUPON_INKS),
         "coupon_test_methods": list(COUPON_TEST_METHODS),
+        "representative_conditions": list(REPRESENTATIVE_CONDITIONS),
+        "qualification_decisions": list(QUALIFICATION_DECISIONS),
         "pattern_features": PATTERN_FEATURES,
         "pattern_targets": PATTERN_TARGETS,
         "interface_features": INTERFACE_FEATURES,
@@ -870,19 +845,19 @@ def generate_interface_dataset(n: int = 40_000, seed: int | None = 17) -> pd.Dat
     mat = _material_arrays(material_idx)
     dev = _device_arrays(device_idx, rng)
 
-    # Reuse the same process physics, but bias patch antennas toward pad-like traces
-    # and CPWs toward long, narrow traces.
-    pseudo_pattern_idx = np.where(dev["device_type"] == "patch_antenna", 0, 2)
+    # Reuse process physics from the printed witness structures, then project the
+    # same geometry/roughness descriptors onto the blind CPW validation witness.
+    pseudo_pattern_idx = np.full(n, 2)
     pattern_base = generate_pattern_dataset(n, seed=(seed or 0) + 101)
     pattern_base["pattern_type"] = np.array([PATTERN_TYPES[i]["id"] for i in pseudo_pattern_idx], dtype=object)
 
-    width_scale = np.where(dev["device_type"] == "patch_antenna", 0.94, 1.0)
+    width_scale = np.ones(n)
     line_width = dev["nominal_width_um"] * (
         1.0
         + (pattern_base["line_width_um"].to_numpy() / pattern_base["nominal_width_um"].to_numpy() - 1.0) * width_scale
         + rng.normal(0.0, 0.012, n)
     )
-    thickness = pattern_base["thickness_um"].to_numpy() * np.where(dev["device_type"] == "patch_antenna", 1.12, 0.96)
+    thickness = pattern_base["thickness_um"].to_numpy() * 0.96
     resistance = (
         dev["trace_length_mm"] * 1e-3
         / np.maximum((line_width * 1e-6) * (thickness * 1e-6) * mat["conductivity_s_m"], 1e-12)
@@ -898,8 +873,8 @@ def generate_interface_dataset(n: int = 40_000, seed: int | None = 17) -> pd.Dat
 
     eps_eff = (mat["dielectric_constant"] + 1.0) / 2.0
     c = 299_792_458.0
-    patch_len_m = _clip(dev["trace_length_mm"], 7.2, 15.8) * 1e-3
-    nominal_resonance = c / (2 * patch_len_m * np.sqrt(eps_eff)) / 1e9
+    cpw_len_m = _clip(dev["trace_length_mm"], 7.2, 31.0) * 1e-3
+    nominal_resonance = c / (2 * cpw_len_m * np.sqrt(eps_eff)) / 1e9
     nominal_resonance = _clip(nominal_resonance, 7.0, 13.5)
 
     width_error = (line_width - dev["nominal_width_um"]) / dev["nominal_width_um"]
@@ -1083,7 +1058,7 @@ def default_coupon_payload() -> dict[str, Any]:
         "substrate_temp_c": 55.0,
         "cure_peak_temp_c": 430.0,
         "cure_time_min": 45.0,
-        "aging_temp_c": 500.0,
+        "aging_temp_c": 350.0,
         "aging_hours": 168.0,
         "cycle_low_temp_c": -40.0,
         "cycle_high_temp_c": 125.0,

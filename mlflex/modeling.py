@@ -311,6 +311,85 @@ def _prediction_interval(prediction: dict[str, float], q90: dict[str, float]) ->
     return intervals
 
 
+def _bond_ai_decision(prediction: dict[str, float], probabilities: dict[str, float]) -> dict[str, Any]:
+    reliability = prediction["reliability_score"]
+    crack = prediction["crack_probability"]
+    delamination = prediction["delamination_area_pct"]
+    voids = prediction["void_fraction_pct"]
+    contact = prediction["contact_resistance_drift_pct"]
+    shear = prediction["post_aging_shear_mpa"]
+    pass_probability = probabilities.get("pass", 0.0)
+    non_pass_probability = max((v for k, v in probabilities.items() if k != "pass"), default=0.0)
+
+    reasons: list[str] = []
+    decision = "MARGINAL"
+    if (
+        reliability >= 80.0
+        and pass_probability >= 0.45
+        and crack <= 0.30
+        and delamination <= 24.0
+        and voids <= 8.5
+        and contact <= 48.0
+        and shear >= 14.0
+    ):
+        decision = "PASS"
+        reasons.append("Predicted drift, voiding, delamination, and shear strength remain inside the modeled qualification window.")
+    elif (
+        reliability < 55.0
+        or crack > 0.58
+        or delamination > 38.0
+        or voids > 12.0
+        or contact > 65.0
+        or shear < 10.0
+        or non_pass_probability > 0.90
+    ):
+        decision = "DEFER_TO_INSPECTION"
+        reasons.append("Modeled risk exceeds the direct-pass window; inspect with CT, microscopy, or destructive bond testing before escalation.")
+    else:
+        reasons.append("Mixed indicators suggest more characterization or a moderated process recipe before final qualification.")
+
+    if prediction["sheet_resistance_drift_pct"] > 35.0:
+        reasons.append("Zone A sheet-resistance drift is elevated.")
+    if contact > 45.0:
+        reasons.append("Zone B Kelvin/contact drift is elevated.")
+    if delamination > 25.0:
+        reasons.append("Delamination area is a primary reliability driver.")
+    if voids > 8.0:
+        reasons.append("CT void fraction is above the preferred bonding window.")
+    if crack > 0.35:
+        reasons.append("Crack/fatigue probability needs close in-situ resistance monitoring.")
+    if shear < 14.0:
+        reasons.append("Post-aging shear margin is low.")
+
+    degradation_state_index = float(np.clip(100.0 - reliability + 18.0 * crack + 0.18 * delamination + 0.55 * voids, 0.0, 100.0))
+    confidence = float(np.clip(max(probabilities.values(), default=0.0) * 100.0, 0.0, 100.0))
+    return {
+        "qualification_decision": decision,
+        "decision_reasons": reasons[:4],
+        "degradation_state_index": degradation_state_index,
+        "confidence_pct": confidence,
+        "failure_risk_index": float(np.clip(100.0 - reliability + non_pass_probability * 22.0, 0.0, 100.0)),
+    }
+
+
+def _coupon_exposure(row: dict[str, Any]) -> dict[str, float | bool]:
+    thermal = float(max(0.0, row["aging_temp_c"] - 25.0) / 475.0 * np.log1p(row["aging_hours"]) / np.log1p(1000.0))
+    cycling = float(max(0.0, row["cycle_high_temp_c"] - row["cycle_low_temp_c"]) / 540.0 * np.log1p(row["thermal_cycles"]) / np.log1p(1000.0))
+    mechanical = float(row["strain_pct"] / 6.5 * np.log1p(row["strain_cycles"]) / np.log1p(10000.0))
+    return {
+        "thermal_exposure": thermal,
+        "cycling_exposure": cycling,
+        "mechanical_exposure": mechanical,
+        "bonding_case": row["coupon_zone"] == "bonding",
+    }
+
+
+def _rul_hours(prediction: dict[str, float], exposure: dict[str, float | bool]) -> float:
+    stress = 1.0 + 2.2 * float(exposure["thermal_exposure"]) + 1.6 * float(exposure["cycling_exposure"]) + 1.1 * float(exposure["mechanical_exposure"])
+    penalty = 1.0 + prediction["crack_probability"] + prediction["void_fraction_pct"] / 14.0 + prediction["delamination_area_pct"] / 70.0
+    return float(np.clip(1500.0 * (prediction["reliability_score"] / 100.0) ** 2.15 / (stress * penalty), 0.0, 1500.0))
+
+
 def predict_pattern(bundle: dict[str, Any], payload: dict[str, Any]) -> dict[str, Any]:
     row = complete_pattern_payload(payload)
     X = pd.DataFrame([row], columns=PATTERN_FEATURES)
@@ -360,17 +439,27 @@ def predict_coupon(bundle: dict[str, Any], payload: dict[str, Any]) -> dict[str,
     classes = list(classifier.named_steps["model"].classes_)
     probabilities = {classes[i]: float(class_probs[i]) for i in range(len(classes))}
     failure_mode = classes[int(np.argmax(class_probs))]
+    exposure = _coupon_exposure(row)
+    decision = _bond_ai_decision(prediction, probabilities)
+    failure_mechanisms = [
+        {"mode": mode, "probability": probability}
+        for mode, probability in sorted(probabilities.items(), key=lambda item: item[1], reverse=True)
+    ][:4]
     return {
         "input": row,
         "prediction": prediction,
         "intervals": _prediction_interval(prediction, bundle["coupon"]["metrics"]["conformal_q90"]),
         "failure_mode": failure_mode,
         "failure_probabilities": probabilities,
+        "qualification_decision": decision["qualification_decision"],
+        "decision_reasons": decision["decision_reasons"],
+        "dominant_failure_mechanisms": failure_mechanisms,
         "derived": {
-            "thermal_exposure": float(max(0.0, row["aging_temp_c"] - 25.0) / 475.0 * np.log1p(row["aging_hours"]) / np.log1p(1000.0)),
-            "cycling_exposure": float(max(0.0, row["cycle_high_temp_c"] - row["cycle_low_temp_c"]) / 540.0 * np.log1p(row["thermal_cycles"]) / np.log1p(1000.0)),
-            "mechanical_exposure": float(row["strain_pct"] / 6.5 * np.log1p(row["strain_cycles"]) / np.log1p(10000.0)),
-            "bonding_case": row["coupon_zone"] == "bonding",
+            **exposure,
+            "remaining_useful_life_hours": _rul_hours(prediction, exposure),
+            "degradation_state_index": decision["degradation_state_index"],
+            "failure_risk_index": decision["failure_risk_index"],
+            "decision_confidence_pct": decision["confidence_pct"],
         },
     }
 
@@ -390,6 +479,13 @@ def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candi
                 "substrate_temp_c": float(rng.uniform(42.0, 88.0)),
                 "cure_peak_temp_c": float(rng.uniform(180.0, 505.0)),
                 "cure_time_min": float(rng.uniform(20.0, 95.0)),
+                "aging_temp_c": float(rng.choice([150.0, 250.0, 350.0, 500.0])),
+                "aging_hours": float(rng.choice([24.0, 72.0, 168.0, 500.0, 1000.0])),
+                "cycle_low_temp_c": float(rng.choice([-40.0, 25.0])),
+                "cycle_high_temp_c": float(rng.choice([125.0, 350.0, 500.0])),
+                "thermal_cycles": float(rng.choice([50, 100, 250, 500, 1000])),
+                "strain_pct": float(rng.uniform(0.15, 4.8)),
+                "strain_cycles": float(rng.choice([50, 200, 1000, 5000, 10000])),
                 "ct_void_fraction_pct": float(rng.uniform(0.5, 10.0)),
                 "oxidation_index": float(rng.uniform(0.04, 0.55)),
                 "edge_roughness_um": float(rng.uniform(1.4, 14.5)),
@@ -397,6 +493,7 @@ def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candi
                 "thickness_um": float(rng.uniform(1.8, 5.6)),
             }
         )
+        row["bend_radius_mm"] = float(max(3.0, 18.0 / max(row["strain_pct"], 0.1)))
         row["line_width_um"] = float(row["nominal_width_um"] * rng.uniform(0.93, 1.10))
         rows.append(row)
 
@@ -422,6 +519,8 @@ def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candi
     for idx in top_idx:
         row = X.iloc[idx].to_dict()
         p = {target: float(pred[idx, i]) for i, target in enumerate(COUPON_TARGETS)}
+        probs = {classes[i]: float(cls_prob[idx, i]) for i in range(len(classes))}
+        decision = _bond_ai_decision(p, probs)
         top.append(
             {
                 "score": float(score[idx]),
@@ -437,6 +536,8 @@ def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candi
                 },
                 "prediction": p,
                 "pass_probability": float(cls_prob[idx, pass_idx]),
+                "qualification_decision": decision["qualification_decision"],
+                "degradation_state_index": decision["degradation_state_index"],
                 "improvement": {
                     "reliability_score": float(p["reliability_score"] - baseline_pred["reliability_score"]),
                     "resistance_drift_pct": float(baseline_pred["sheet_resistance_drift_pct"] - p["sheet_resistance_drift_pct"]),
@@ -458,12 +559,49 @@ def digital_twin_feedback(bundle: dict[str, Any], payload: dict[str, Any], candi
     if not actions:
         actions.append("Current recipe is inside the modeled reliability window; continue monitoring drift and voiding.")
 
+    uncertainty = 1.0 - cls_prob.max(axis=1)
+    novelty = (
+        np.abs(X["aging_temp_c"].to_numpy() - base["aging_temp_c"]) / 500.0
+        + np.abs(X["thermal_cycles"].to_numpy() - base["thermal_cycles"]) / 1000.0
+        + np.abs(X["ct_void_fraction_pct"].to_numpy() - base["ct_void_fraction_pct"]) / 18.0
+        + np.abs(X["edge_roughness_um"].to_numpy() - base["edge_roughness_um"]) / 36.0
+    )
+    info_gain = 0.75 * uncertainty + 0.25 * np.clip(novelty, 0.0, 1.0)
+    experiment_idx = np.argsort(info_gain)[-4:][::-1]
+    next_experiments = []
+    for rank, idx in enumerate(experiment_idx, start=1):
+        row = X.iloc[idx].to_dict()
+        p = {target: float(pred[idx, i]) for i, target in enumerate(COUPON_TARGETS)}
+        probs = {classes[i]: float(cls_prob[idx, i]) for i in range(len(classes))}
+        decision = _bond_ai_decision(p, probs)
+        next_experiments.append(
+            {
+                "rank": rank,
+                "information_gain_score": float(info_gain[idx]),
+                "why": "Classifier disagreement is high near a stress/process boundary.",
+                "coupon_structure": row["coupon_structure"],
+                "ink_family": row["ink_family"],
+                "test_method": row["test_method"],
+                "condition": {
+                    "aging_temp_c": row["aging_temp_c"],
+                    "aging_hours": row["aging_hours"],
+                    "thermal_cycles": row["thermal_cycles"],
+                    "strain_pct": row["strain_pct"],
+                    "ct_void_fraction_pct": row["ct_void_fraction_pct"],
+                    "edge_roughness_um": row["edge_roughness_um"],
+                },
+                "predicted_decision": decision["qualification_decision"],
+                "top_failure_mode": max(probs.items(), key=lambda item: item[1])[0],
+            }
+        )
+
     return {
         "baseline": baseline,
         "candidates": candidates,
         "top": top,
         "recommended_recipe": best,
         "actions": actions,
+        "next_experiments": next_experiments,
     }
 
 

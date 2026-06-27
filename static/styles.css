@@ -63,13 +63,15 @@ select {
 .brand-mark {
   display: grid;
   place-items: center;
-  width: 52px;
+  width: 78px;
   height: 52px;
   border-radius: 8px;
   background: var(--teal);
   color: white;
   font-weight: 800;
+  font-size: 13px;
   letter-spacing: 0;
+  flex: 0 0 auto;
 }
 
 h1,
@@ -429,6 +431,18 @@ h3 {
   margin-top: 5px;
   font-size: 18px;
   overflow-wrap: anywhere;
+}
+
+.state-row small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.35;
+  margin-top: 7px;
+}
+
+.state-row.highlight {
+  border-color: #b9d8dc;
+  background: linear-gradient(180deg, #f7fbfb, #fbfcfa);
 }
 
 .chart-block {

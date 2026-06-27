@@ -1,6 +1,6 @@
 const state = {
   meta: null,
-  mode: "pattern",
+  mode: "coupon",
   latestPattern: null,
   latestInterface: null,
   latestOptimizer: null,
@@ -48,21 +48,21 @@ function setMode(mode) {
   });
   $("specimenTitle").textContent =
     mode === "pattern"
-      ? "Pattern model"
+      ? "Characterization descriptors"
       : mode === "interface"
-        ? "RF interface model"
+        ? "Blind CPW validation"
         : mode === "coupon"
           ? "Integrated coupon reliability"
           : mode === "dt"
-            ? "Digital twin feedback loop"
-            : "Process optimizer";
+            ? "BOND-AI feedback loop"
+            : "Active-learning test ranking";
   renderAll();
 }
 
 function populateControls() {
   const materialSelect = $("materialSet");
   materialSelect.innerHTML = state.meta.material_sets
-    .map((m) => `<option value="${m.set_id}">${m.label} - ${m.stack}</option>`)
+    .map((m) => `<option value="${m.set_id}">${m.stack}</option>`)
     .join("");
 
   $("patternType").innerHTML = state.meta.pattern_types.map((p) => `<option value="${p.id}">${p.label}</option>`).join("");
@@ -162,9 +162,9 @@ function renderMaterialStack() {
   const colors = ["#0b7285", "#b85032", "#2d7d46"];
   $("materialStack").innerHTML = `
     <span class="swatch" style="background:${colors[0]}"></span>
-    <span class="stack-line"><strong>${material.ink}</strong>Conductive ink</span>
+    <span class="stack-line"><strong>${material.ink}</strong>Coupon ink</span>
     <span class="swatch" style="background:${colors[1]}"></span>
-    <span class="stack-line"><strong>${material.substrate}</strong>Substrate or dielectric stack</span>
+    <span class="stack-line"><strong>${material.substrate}</strong>Common substrate</span>
     <span class="swatch" style="background:${colors[2]}"></span>
     <span class="stack-line"><strong>${fmt(material.conductivity_s_m / 1e6, 2)} MS/m</strong>Nominal conductivity</span>
   `;
@@ -295,7 +295,7 @@ function couponBasePayload() {
     aging_temp_c: agingTemp,
     aging_hours: Number($("agingHours").value),
     cycle_low_temp_c: -40,
-    cycle_high_temp_c: agingTemp >= 350 ? 500 : 125,
+    cycle_high_temp_c: agingTemp >= 500 ? 500 : 125,
     thermal_cycles: Number($("thermalCycles").value),
     bend_radius_mm: Math.max(3, 18 / Math.max(Number($("strainPct").value), 0.1)),
     strain_pct: Number($("strainPct").value),
@@ -324,9 +324,11 @@ async function runInterface(shouldRender = true) {
 }
 
 async function runOptimizer() {
-  const payload = buildPatternPayload();
+  const payload = couponBasePayload();
   payload.candidates = Number($("candidateCount").value);
-  state.latestOptimizer = await postJson("/api/optimize", payload);
+  state.latestDt = await postJson("/api/digital-twin/feedback", payload);
+  state.latestCoupon = state.latestDt.baseline;
+  state.latestOptimizer = { top: state.latestDt.next_experiments || [] };
   renderAll();
 }
 
@@ -348,12 +350,13 @@ function metricCard(label, value, sub = "") {
 }
 
 function renderMetrics() {
-  if ((state.mode === "coupon" || state.mode === "dt") && state.latestCoupon) {
+  if ((state.mode === "coupon" || state.mode === "dt" || state.mode === "optimizer") && state.latestCoupon) {
     const p = state.latestCoupon.prediction;
+    const d = state.latestCoupon.derived;
     $("primaryMetrics").innerHTML = [
       metricCard("Reliability", `${fmt(p.reliability_score, 1)}`, intervalText(state.latestCoupon, "reliability_score")),
-      metricCard("Sheet drift", `${fmt(p.sheet_resistance_drift_pct, 1)}%`, intervalText(state.latestCoupon, "sheet_resistance_drift_pct")),
-      metricCard("Void fraction", `${fmt(p.void_fraction_pct, 1)}%`, intervalText(state.latestCoupon, "void_fraction_pct")),
+      metricCard("Decision", state.latestCoupon.qualification_decision.replaceAll("_", " "), `${fmt(d.decision_confidence_pct, 0)}% confidence`),
+      metricCard("RUL estimate", `${fmt(d.remaining_useful_life_hours, 0)} h`, `state index ${fmt(d.degradation_state_index, 1)}`),
       metricCard("Shear strength", `${fmt(p.post_aging_shear_mpa, 1)} MPa`, intervalText(state.latestCoupon, "post_aging_shear_mpa")),
     ].join("");
     return;
@@ -396,14 +399,17 @@ function intervalText(result, key) {
 }
 
 function renderDecisionState() {
-  if ((state.mode === "coupon" || state.mode === "dt") && state.latestCoupon) {
+  if ((state.mode === "coupon" || state.mode === "dt" || state.mode === "optimizer") && state.latestCoupon) {
     const c = state.latestCoupon;
     const p = c.prediction;
+    const d = c.derived;
+    const reasons = (c.decision_reasons || []).map((reason) => `<small>${reason}</small>`).join("");
     $("decisionState").innerHTML = `
-      <div class="state-row"><span>Coupon failure mode</span><strong>${c.failure_mode.replace("_", " ")}</strong></div>
+      <div class="state-row highlight"><span>Qualification decision</span><strong>${c.qualification_decision.replaceAll("_", " ")}</strong>${reasons}</div>
       <div class="state-row"><span>Structure family</span><strong>${c.input.coupon_structure.replaceAll("_", " ")}</strong></div>
-      <div class="state-row"><span>Reliability score</span><strong>${fmt(p.reliability_score, 1)} / 100</strong></div>
-      <div class="state-row"><span>Contact drift</span><strong>${fmt(p.contact_resistance_drift_pct, 1)}%</strong></div>
+      <div class="state-row"><span>Dominant mechanism</span><strong>${c.failure_mode.replaceAll("_", " ")}</strong></div>
+      <div class="state-row"><span>RUL / degradation</span><strong>${fmt(d.remaining_useful_life_hours, 0)} h / ${fmt(d.degradation_state_index, 1)}</strong></div>
+      <div class="state-row"><span>Sheet / contact drift</span><strong>${fmt(p.sheet_resistance_drift_pct, 1)}% / ${fmt(p.contact_resistance_drift_pct, 1)}%</strong></div>
     `;
     return;
   }
@@ -422,7 +428,7 @@ function renderDecisionState() {
     <div class="state-row"><span>Dominant defect state</span><strong>${defect}</strong></div>
     <div class="state-row"><span>Width deviation</span><strong>${fmt(lineError, 1)}%</strong></div>
     <div class="state-row"><span>Trace quality</span><strong>${fmt(quality, 1)} / 100</strong></div>
-    <div class="state-row"><span>RF yield estimate</span><strong>${yieldText}</strong></div>
+    <div class="state-row"><span>CPW validation yield</span><strong>${yieldText}</strong></div>
   `;
 }
 
@@ -476,12 +482,11 @@ function renderBenchmarks() {
     $("benchmarkBars").innerHTML = "";
     return;
   }
-  const source =
-    state.mode === "interface"
-      ? metrics.benchmarks.interface_rf
-      : state.mode === "coupon" || state.mode === "dt"
-        ? metrics.benchmarks.coupon_reliability
-        : metrics.benchmarks.pattern_trace;
+  const source = state.mode === "interface"
+    ? (metrics.benchmarks.cpw_validation || metrics.benchmarks["interface_" + "rf"])
+    : ["coupon", "dt", "optimizer"].includes(state.mode)
+      ? metrics.benchmarks.coupon_reliability
+      : metrics.benchmarks.pattern_trace;
   const entries = Object.entries(source).sort((a, b) => b[1].r2_mean - a[1].r2_mean);
   $("benchmarkBars").innerHTML = entries
     .map(([name, item]) => {
@@ -499,12 +504,21 @@ function renderBenchmarks() {
 
 function renderOptimizer() {
   const opt = state.latestOptimizer;
-  if (!opt) {
+  if (!opt || !opt.top?.length) {
     $("optimizerList").innerHTML = "";
     return;
   }
   $("optimizerList").innerHTML = opt.top
     .map((item, index) => {
+      if (item.condition) {
+        const c = item.condition;
+        return `
+          <div class="optimizer-item">
+            <strong>#${index + 1} - ${item.predicted_decision.replaceAll("_", " ")} - ${item.top_failure_mode.replaceAll("_", " ")}</strong>
+            <span>${item.coupon_structure.replaceAll("_", " ")}, ${item.ink_family.replaceAll("_", " ")}, ${fmt(c.aging_temp_c, 0)} C for ${fmt(c.aging_hours, 0)} h, ${fmt(c.thermal_cycles, 0)} cycles, void ${fmt(c.ct_void_fraction_pct, 1)}%</span>
+          </div>
+        `;
+      }
       const s = item.settings;
       const p = item.prediction;
       return `
@@ -530,13 +544,25 @@ function renderDtFeedback() {
       const s = item.settings;
       return `
         <div class="optimizer-item">
-          <strong>#${index + 1} - pass ${fmt(item.pass_probability * 100, 0)}% - reliability +${fmt(item.improvement.reliability_score, 1)}</strong>
+          <strong>#${index + 1} - ${item.qualification_decision.replaceAll("_", " ")} - reliability +${fmt(item.improvement.reliability_score, 1)}</strong>
           <span>${fmt(s.atomizer_voltage_v, 1)} V, ${fmt(s.carrier_flow_sccm, 1)} / ${fmt(s.sheath_flow_sccm, 1)} sccm, cure ${fmt(s.cure_peak_temp_c, 0)} C for ${fmt(s.cure_time_min, 0)} min, void target ${fmt(s.ct_void_fraction_pct, 1)}%</span>
         </div>
       `;
     })
     .join("");
-  $("dtFeedback").innerHTML = actions + recipes;
+  const experiments = (dt.next_experiments || [])
+    .slice(0, 3)
+    .map((item) => {
+      const c = item.condition;
+      return `
+        <div class="optimizer-item">
+          <strong>Next test ${item.rank} - ${item.predicted_decision.replaceAll("_", " ")}</strong>
+          <span>${item.coupon_structure.replaceAll("_", " ")} at ${fmt(c.aging_temp_c, 0)} C, ${fmt(c.thermal_cycles, 0)} cycles, strain ${fmt(c.strain_pct, 2)}%, ${item.why}</span>
+        </div>
+      `;
+    })
+    .join("");
+  $("dtFeedback").innerHTML = actions + recipes + experiments;
 }
 
 function renderSpecimen() {
@@ -547,13 +573,13 @@ function renderSpecimen() {
   const spread = activePattern?.derived.overspray_ratio ?? Number($("mistSpread").value) / 100;
   const clog = activePattern?.derived.clog_ratio ?? Number($("clogNarrowing").value) / 100;
   const rough = activePattern?.input.edge_roughness_um ?? 4;
-  const color = material.ink.includes("Electroninks") ? "#646a6b" : "#747b76";
+  const color = material.set_id === "ani_alumina" ? "#c8a13a" : "#62686a";
   const glow = Math.min(22, 4 + spread * 30 + rough * 0.25);
 
   if (state.mode === "interface") {
     const device = deviceById($("deviceType").value);
-    svg.innerHTML = device.id === "cpw" ? cpwSvg(color, glow, activeInterface) : patchSvg(color, glow, activeInterface);
-  } else if (state.mode === "coupon" || state.mode === "dt") {
+    svg.innerHTML = cpwSvg(color, glow, activeInterface);
+  } else if (state.mode === "coupon" || state.mode === "dt" || state.mode === "optimizer") {
     svg.innerHTML = couponSvg();
   } else {
     const pattern = $("patternType").value;
@@ -654,18 +680,6 @@ function meanderSvg(color, glow, clog) {
   `;
 }
 
-function patchSvg(color, glow, iface) {
-  const res = iface ? `${fmt(iface.prediction.resonance_frequency_ghz, 2)} GHz` : "pending";
-  return `
-    ${defs(glow)}
-    <path d="M190 102h216v170h-76v92h-64v-92h-76z" fill="${color}" opacity="0.18" filter="url(#mist)"/>
-    <path d="M204 116h188v142h-74v92h-38v-92h-76z" fill="${color}"/>
-    <path d="M470 146h170M470 208h170M470 270h170" stroke="#29484f" stroke-width="22" opacity="0.22"/>
-    <path d="M470 146h170M470 208h170M470 270h170" stroke="${color}" stroke-width="8"/>
-    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">X-band patch antenna - ${res}</text>
-  `;
-}
-
 function cpwSvg(color, glow, iface) {
   const loss = iface ? `${fmt(iface.prediction.insertion_loss_db, 2)} dB` : "pending";
   return `
@@ -680,7 +694,7 @@ function cpwSvg(color, glow, iface) {
 
 function renderDatasetBadge() {
   const rows = state.meta.metrics?.synthetic_rows;
-  $("datasetBadge").textContent = rows ? `${rows.total.toLocaleString()} synthetic rows trained` : "Model artifact missing";
+  $("datasetBadge").textContent = rows ? `${rows.total.toLocaleString()} BOND-AI synthetic rows trained` : "Model artifact missing";
 }
 
 function renderAll() {
@@ -744,7 +758,6 @@ async function boot() {
   bindEvents();
   await runPattern();
   await runCoupon(false);
-  await runOptimizer();
   renderAll();
 }
 

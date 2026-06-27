@@ -3,16 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ML-Flex AJP Process Intelligence</title>
-    <link rel="stylesheet" href="/static/styles.css" />
+    <title>BOND-AI Reliability Digital Twin</title>
+    <link rel="stylesheet" href="/static/styles.css?v=bond-ai-20260627b" />
   </head>
   <body>
     <header class="topbar">
       <div class="brand">
-        <span class="brand-mark">AJP</span>
+        <span class="brand-mark">BOND-AI</span>
         <div>
-          <h1>ML-Flex Process Intelligence</h1>
-          <p>Aerosol Jet Printing defect, trace, and RF interface surrogate</p>
+          <h1>BOND-AI Reliability Digital Twin</h1>
+          <p>Integrated interface degradation and bond-joint reliability on a 500C alumina coupon</p>
         </div>
       </div>
       <div class="status-strip" aria-label="model status">
@@ -24,23 +24,23 @@
     <main class="workspace">
       <section class="panel control-panel" aria-label="controls">
         <div class="mode-toggle" role="tablist" aria-label="mode">
-          <button class="mode-button active" data-mode="pattern" type="button">Pattern</button>
-          <button class="mode-button" data-mode="interface" type="button">Interface</button>
-          <button class="mode-button" data-mode="coupon" type="button">Coupon</button>
-          <button class="mode-button" data-mode="dt" type="button">DT Loop</button>
-          <button class="mode-button" data-mode="optimizer" type="button">Optimizer</button>
+          <button class="mode-button active" data-mode="coupon" type="button">Coupon</button>
+          <button class="mode-button" data-mode="dt" type="button">Digital Twin</button>
+          <button class="mode-button" data-mode="pattern" type="button">Characterize</button>
+          <button class="mode-button" data-mode="interface" type="button">CPW Verify</button>
+          <button class="mode-button" data-mode="optimizer" type="button">Active Learn</button>
         </div>
 
         <label class="field">
-          <span>Material set</span>
+          <span>Ink / alumina stack</span>
           <select id="materialSet"></select>
         </label>
 
         <div class="material-stack" id="materialStack"></div>
 
-        <div class="mode-pane active" id="pane-pattern">
+        <div class="mode-pane" id="pane-pattern">
           <label class="field">
-            <span>Printed pattern</span>
+            <span>Printed witness geometry</span>
             <select id="patternType"></select>
           </label>
           <label class="field">
@@ -79,12 +79,12 @@
             <span>Droplet blobs <b id="blobOut"></b></span>
             <input id="blobCount" type="range" min="0" max="6" step="1" />
           </label>
-          <button id="runPattern" class="primary-action" type="button">Run Pattern Model</button>
+          <button id="runPattern" class="primary-action" type="button">Update Characterization</button>
         </div>
 
         <div class="mode-pane" id="pane-interface">
           <label class="field">
-            <span>RF structure</span>
+            <span>Blind validation structure</span>
             <select id="deviceType"></select>
           </label>
           <label class="field">
@@ -99,10 +99,10 @@
             <span>Trace length <b id="traceLengthOut"></b></span>
             <input id="traceLength" type="range" min="7" max="42" step="0.1" />
           </label>
-          <button id="runInterface" class="primary-action" type="button">Run Interface Model</button>
+          <button id="runInterface" class="primary-action" type="button">Run CPW Validation</button>
         </div>
 
-        <div class="mode-pane" id="pane-coupon">
+        <div class="mode-pane active" id="pane-coupon">
           <label class="field">
             <span>Analysis zone</span>
             <select id="analysisZone">
@@ -146,7 +146,7 @@
             <span>CT void fraction <b id="voidOut"></b></span>
             <input id="voidFraction" type="range" min="0" max="18" step="0.1" />
           </label>
-          <button id="runCoupon" class="primary-action" type="button">Run Coupon Model</button>
+          <button id="runCoupon" class="primary-action" type="button">Analyze Coupon</button>
         </div>
 
         <div class="mode-pane" id="pane-optimizer">
@@ -154,7 +154,7 @@
             <span>Candidate search <b id="candidateOut"></b></span>
             <input id="candidateCount" type="range" min="200" max="1800" step="100" />
           </label>
-          <button id="runOptimizer" class="primary-action" type="button">Optimize Process</button>
+          <button id="runOptimizer" class="primary-action" type="button">Rank Next Coupon Tests</button>
         </div>
 
         <div class="mode-pane" id="pane-dt">
@@ -177,15 +177,15 @@
             <span>DT search depth <b id="dtCandidateOut"></b></span>
             <input id="dtCandidateCount" type="range" min="200" max="1800" step="100" />
           </label>
-          <button id="runDt" class="primary-action" type="button">Close DT Feedback Loop</button>
+          <button id="runDt" class="primary-action" type="button">Close Feedback Loop</button>
         </div>
       </section>
 
       <section class="panel visual-panel" aria-label="specimen">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Synthetic specimen</p>
-            <h2 id="specimenTitle">Pattern model</h2>
+            <p class="eyebrow">BOND-AI platform</p>
+            <h2 id="specimenTitle">Integrated coupon reliability</h2>
           </div>
           <span id="datasetBadge" class="badge">Training data pending</span>
         </div>
@@ -195,20 +195,20 @@
         <div class="metric-grid" id="primaryMetrics"></div>
         <div class="pipeline">
           <div>
-            <span>Sensor fusion</span>
-            <strong>mist geometry + deposition</strong>
+            <span>Coupon</span>
+            <strong>Zone A + Zone B on alumina</strong>
           </div>
           <div>
-            <span>Trace model</span>
-            <strong>width, thickness, resistance</strong>
-          </div>
-          <div>
-            <span>RF surrogate</span>
-            <strong>patch antenna + CPW metrics</strong>
+            <span>Characterization</span>
+            <strong>electrical, structural, mechanical</strong>
           </div>
           <div>
             <span>Digital twin</span>
-            <strong>coupon reliability feedback</strong>
+            <strong>degradation state + RUL</strong>
+          </div>
+          <div>
+            <span>Feedback</span>
+            <strong>recipe and next-test ranking</strong>
           </div>
         </div>
       </section>
@@ -217,16 +217,16 @@
         <div class="section-head compact">
           <div>
             <p class="eyebrow">Model output</p>
-            <h2>Decision state</h2>
+            <h2>Qualification state</h2>
           </div>
         </div>
         <div id="decisionState" class="decision-state"></div>
         <div class="chart-block">
-          <h3>Defect probability</h3>
+          <h3>Process anomaly probability</h3>
           <div id="defectBars" class="bars"></div>
         </div>
         <div class="chart-block">
-          <h3>Failure probability</h3>
+          <h3>Failure mechanism probability</h3>
           <div id="failureBars" class="bars"></div>
         </div>
         <div class="chart-block">
@@ -234,16 +234,16 @@
           <div id="benchmarkBars" class="bars"></div>
         </div>
         <div class="chart-block">
-          <h3>Optimizer shortlist</h3>
+          <h3>Active-learning shortlist</h3>
           <div id="optimizerList" class="optimizer-list"></div>
         </div>
         <div class="chart-block">
-          <h3>DT feedback</h3>
+          <h3>BOND-AI feedback</h3>
           <div id="dtFeedback" class="optimizer-list"></div>
         </div>
       </aside>
     </main>
 
-    <script src="/static/app.js" type="module"></script>
+    <script src="/static/app.js?v=bond-ai-20260627b" type="module"></script>
   </body>
 </html>

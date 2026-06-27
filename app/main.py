@@ -22,9 +22,12 @@ class Payload(BaseModel):
 
 
 app = FastAPI(
-    title="ML-Flex AJP Process Intelligence Portal",
-    version="0.1.0",
-    description="Synthetic ML demonstration for aerosol jet printed pattern and RF interface modeling.",
+    title="BOND-AI Reliability Digital Twin Portal",
+    version="0.2.0",
+    description=(
+        "Synthetic reliability digital twin for a 500C alumina coupon combining "
+        "Zone A interface structures and Zone B bonding structures."
+    ),
 )
 app.add_middleware(
     CORSMiddleware,
@@ -76,32 +79,24 @@ def api_metadata() -> dict[str, Any]:
         data["metrics"] = None
     data["research_sources"] = [
         {
-            "label": "Rurup & Secor 2023, closed-loop AJP deposition-rate control",
-            "url": "https://www.osti.gov/biblio/1968643",
+            "label": "BOND-AI proposal: integrated interface and bonding coupon methodology",
+            "url": "",
         },
         {
-            "label": "Zhang et al. 2024, data-driven AJP droplet abnormality identification",
-            "url": "https://www.tandfonline.com/doi/full/10.1080/17452759.2024.2429530",
+            "label": "Zone A: sheet resistance drift, crack/fatigue, adhesion, and delamination descriptors",
+            "url": "",
         },
         {
-            "label": "TabPFN 2025, tabular foundation model",
-            "url": "https://www.nature.com/articles/s41586-024-08328-6",
+            "label": "Zone B: Kelvin contact drift, die/chip attach voiding, shear, and pull strength descriptors",
+            "url": "",
         },
         {
-            "label": "SAM 2 2024, promptable image/video segmentation",
-            "url": "https://arxiv.org/abs/2408.00714",
+            "label": "Physics priors: Arrhenius aging, fatigue/cycling damage, void growth, and interface reaction layers",
+            "url": "",
         },
         {
-            "label": "DINOv2 2024 revision, self-supervised vision features",
-            "url": "https://arxiv.org/abs/2304.07193",
-        },
-        {
-            "label": "Temporal Fusion Transformer, interpretable time-series fusion",
-            "url": "https://arxiv.org/abs/1912.09363",
-        },
-        {
-            "label": "Conformalized Quantile Regression, finite-sample prediction intervals",
-            "url": "https://papers.nips.cc/paper/8613-conformalized-quantile-regression",
+            "label": "Decision layer: conformal q90 intervals, failure-mode ranking, RUL estimate, and active learning",
+            "url": "",
         },
     ]
     return data
