@@ -23,10 +23,13 @@ class Payload(BaseModel):
 
 app = FastAPI(
     title="BOND-AI Reliability Digital Twin Portal",
-    version="0.2.0",
+    version="0.3.0",
     description=(
-        "Synthetic reliability digital twin for a 500C alumina coupon combining "
-        "Zone A interface structures and Zone B bonding structures."
+        "BOND-AI: a physics-of-failure digital twin with machine-learning prognostics for "
+        "high-temperature printed interfaces and bond joints. A reference implementation of the "
+        "SEMI FlexTech Topic B methodology on a single 500C-capable alumina coupon that co-locates "
+        "Zone A interface structures with Zone B bonding structures. All outputs are synthetic and "
+        "illustrative pending measured project coupon data."
     ),
 )
 app.add_middleware(
@@ -77,28 +80,6 @@ def api_metadata() -> dict[str, Any]:
         data["metrics"] = bundle()["metrics"]
     except HTTPException:
         data["metrics"] = None
-    data["research_sources"] = [
-        {
-            "label": "BOND-AI proposal: integrated interface and bonding coupon methodology",
-            "url": "",
-        },
-        {
-            "label": "Zone A: sheet resistance drift, crack/fatigue, adhesion, and delamination descriptors",
-            "url": "",
-        },
-        {
-            "label": "Zone B: Kelvin contact drift, die/chip attach voiding, shear, and pull strength descriptors",
-            "url": "",
-        },
-        {
-            "label": "Physics priors: Arrhenius aging, fatigue/cycling damage, void growth, and interface reaction layers",
-            "url": "",
-        },
-        {
-            "label": "Decision layer: conformal q90 intervals, failure-mode ranking, RUL estimate, and active learning",
-            "url": "",
-        },
-    ]
     return data
 
 

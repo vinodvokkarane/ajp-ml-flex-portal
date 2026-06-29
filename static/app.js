@@ -18,6 +18,26 @@ const fmt = (value, digits = 2) => {
   });
 };
 
+const setText = (id, text) => {
+  const el = $(id);
+  if (el) el.textContent = text || "";
+};
+
+// Locale-independent number for SVG numeric attributes (fmt() can emit comma decimals).
+const svgNum = (value, digits = 2) => Number(value || 0).toFixed(digits);
+
+const MODE_HINTS = {
+  coupon:
+    "Integrated Zone A + Zone B coupon reliability under accelerated aging, gated by a conformal PASS / MARGINAL / DEFER-TO-INSPECTION decision.",
+  dt: "Close the digital-twin loop: reconcile coupon reliability with the upstream process and rank better cure and process recipes.",
+  pattern:
+    "Printed-trace surrogate: line geometry, thickness, resistance, and quality with a calibrated process-anomaly breakdown.",
+  interface:
+    "Blind validation on a held-out X-band CPW (Figure 5) built on the same materials but excluded from model development.",
+  optimizer:
+    "Active learning: rank the highest-information next coupons and conditions to build the reliability map in far fewer runs.",
+};
+
 const postJson = async (url, values) => {
   const response = await fetch(url, {
     method: "POST",
@@ -41,10 +61,15 @@ const couponsByZone = (zone) => state.meta.coupon_structures.filter((c) => c.zon
 function setMode(mode) {
   state.mode = mode;
   document.querySelectorAll(".mode-button").forEach((button) => {
-    button.classList.toggle("active", button.dataset.mode === mode);
+    const active = button.dataset.mode === mode;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", active ? "true" : "false");
+    button.tabIndex = active ? 0 : -1;
   });
   document.querySelectorAll(".mode-pane").forEach((pane) => {
-    pane.classList.toggle("active", pane.id === `pane-${mode}`);
+    const active = pane.id === `pane-${mode}`;
+    pane.classList.toggle("active", active);
+    pane.hidden = !active;
   });
   $("specimenTitle").textContent =
     mode === "pattern"
@@ -155,6 +180,22 @@ function syncLabels() {
   $("strainOut").textContent = `${fmt($("strainPct").value, 2)}%`;
   $("voidOut").textContent = `${fmt($("voidFraction").value, 1)}%`;
   $("dtCandidateOut").textContent = `${fmt($("dtCandidateCount").value, 0)}`;
+
+  // Mirror each slider's formatted value (with units) into aria-valuetext for screen readers.
+  const sliderPairs = [
+    ["nominalWidth", "widthOut"], ["atomizerVoltage", "atomizerOut"], ["carrierFlow", "carrierOut"],
+    ["sheathFlow", "sheathOut"], ["printSpeed", "speedOut"], ["depositionRate", "depositionOut"],
+    ["mistSpread", "spreadOut"], ["clogNarrowing", "clogOut"], ["blobCount", "blobOut"],
+    ["deviceWidth", "deviceWidthOut"], ["deviceGap", "deviceGapOut"], ["traceLength", "traceLengthOut"],
+    ["candidateCount", "candidateOut"], ["agingTemp", "agingTempOut"], ["agingHours", "agingHoursOut"],
+    ["thermalCycles", "thermalCyclesOut"], ["strainPct", "strainOut"], ["voidFraction", "voidOut"],
+    ["dtCandidateCount", "dtCandidateOut"],
+  ];
+  sliderPairs.forEach(([input, out]) => {
+    const el = $(input);
+    const label = $(out);
+    if (el && label) el.setAttribute("aria-valuetext", label.textContent);
+  });
 }
 
 function renderMaterialStack() {
@@ -443,9 +484,10 @@ function renderDefectBars() {
     .map(([label, value]) => {
       const pct = Math.round(value * 100);
       const warn = label !== "nominal" && pct > 12 ? "warn" : "";
+      const name = label.replace("_", " ");
       return `
         <div class="bar-row">
-          <span class="bar-label">${label.replace("_", " ")}</span>
+          <span class="bar-label" title="${name}">${name}</span>
           <span class="bar-track"><span class="bar-fill ${warn}" style="width:${pct}%"></span></span>
           <span class="bar-value">${pct}%</span>
         </div>
@@ -465,9 +507,10 @@ function renderFailureBars() {
     .map(([label, value]) => {
       const pct = Math.round(value * 100);
       const warn = label !== "pass" && pct > 14 ? "warn" : "";
+      const name = label.replace("_", " ");
       return `
         <div class="bar-row">
-          <span class="bar-label">${label.replace("_", " ")}</span>
+          <span class="bar-label" title="${name}">${name}</span>
           <span class="bar-track"><span class="bar-fill ${warn}" style="width:${pct}%"></span></span>
           <span class="bar-value">${pct}%</span>
         </div>
@@ -493,7 +536,7 @@ function renderBenchmarks() {
       const width = Math.max(4, Math.min(100, item.r2_mean * 100));
       return `
         <div class="bar-row">
-          <span class="bar-label">${name}</span>
+          <span class="bar-label" title="${name}">${name}</span>
           <span class="bar-track"><span class="bar-fill" style="width:${width}%"></span></span>
           <span class="bar-value">${fmt(item.r2_mean, 2)}</span>
         </div>
@@ -576,17 +619,30 @@ function renderSpecimen() {
   const color = material.set_id === "ani_alumina" ? "#c8a13a" : "#62686a";
   const glow = Math.min(22, 4 + spread * 30 + rough * 0.25);
 
+  let label = "synthetic printed specimen";
   if (state.mode === "interface") {
-    const device = deviceById($("deviceType").value);
     svg.innerHTML = cpwSvg(color, glow, activeInterface);
+    const p = activeInterface?.prediction;
+    label = p
+      ? `Blind X-band CPW validation schematic. Resonance ${fmt(p.resonance_frequency_ghz, 2)} gigahertz, insertion loss ${fmt(p.insertion_loss_db, 2)} decibels, return loss ${fmt(p.return_loss_db, 1)} decibels.`
+      : "Blind X-band CPW validation schematic.";
   } else if (state.mode === "coupon" || state.mode === "dt" || state.mode === "optimizer") {
     svg.innerHTML = couponSvg();
+    const p = state.latestCoupon?.prediction;
+    label = p
+      ? `Integrated Zone A and Zone B coupon schematic. Reliability score ${fmt(p.reliability_score, 1)} of 100.`
+      : "Integrated Zone A and Zone B coupon schematic.";
   } else {
     const pattern = $("patternType").value;
     if (pattern === "dogbone") svg.innerHTML = dogboneSvg(color, glow, clog);
     else if (pattern === "meander") svg.innerHTML = meanderSvg(color, glow, clog);
     else svg.innerHTML = padSvg(color, glow, spread);
+    const p = activePattern?.prediction;
+    label = p
+      ? `Printed trace schematic. Line width ${fmt(p.line_width_um, 1)} micrometres, quality ${fmt(p.quality_score, 0)} of 100.`
+      : "Printed trace schematic.";
   }
+  svg.setAttribute("aria-label", label);
 }
 
 function couponSvg() {
@@ -602,7 +658,7 @@ function couponSvg() {
         <stop offset="0" stop-color="#fafafa"/>
         <stop offset="1" stop-color="#eef4e8"/>
       </linearGradient>
-      <filter id="stress"><feGaussianBlur stdDeviation="${fmt(2 + stress * 6, 1)}"/></filter>
+      <filter id="stress"><feGaussianBlur stdDeviation="${svgNum(2 + stress * 6, 1)}"/></filter>
     </defs>
     <rect x="28" y="36" width="704" height="340" rx="8" fill="url(#alumina)" stroke="#20333a" stroke-width="2"/>
     <line x1="380" y1="52" x2="380" y2="360" stroke="#8da1a6" stroke-width="2" stroke-dasharray="8 8"/>
@@ -621,7 +677,7 @@ function couponSvg() {
     <rect x="52" y="54" width="24" height="24" fill="#6b6f70"/><rect x="684" y="54" width="24" height="24" fill="#6b6f70"/>
     <rect x="52" y="332" width="24" height="24" fill="#6b6f70"/><rect x="684" y="332" width="24" height="24" fill="#6b6f70"/>
     <circle cx="380" cy="54" r="9" fill="none" stroke="#111" stroke-width="2"/><circle cx="380" cy="358" r="9" fill="none" stroke="#111" stroke-width="2"/>
-    <rect x="76" y="90" width="615" height="226" fill="#d66b42" opacity="${fmt(stress * 0.08, 2)}" filter="url(#stress)"/>
+    <rect x="76" y="90" width="615" height="226" fill="#d66b42" opacity="${svgNum(stress * 0.08, 2)}" filter="url(#stress)"/>
     <text x="54" y="396" fill="#20333a" font-size="17" font-weight="800">${coupon.label} - reliability ${score}</text>
   `;
 }
@@ -629,7 +685,7 @@ function couponSvg() {
 function defs(glow) {
   return `
     <defs>
-      <filter id="mist"><feGaussianBlur stdDeviation="${fmt(glow, 1)}"/></filter>
+      <filter id="mist"><feGaussianBlur stdDeviation="${svgNum(glow, 1)}"/></filter>
       <linearGradient id="substrate" x1="0" x2="1">
         <stop offset="0" stop-color="#f8ddcc"/>
         <stop offset="1" stop-color="#f6efe3"/>
@@ -681,14 +737,109 @@ function meanderSvg(color, glow, clog) {
 }
 
 function cpwSvg(color, glow, iface) {
-  const loss = iface ? `${fmt(iface.prediction.insertion_loss_db, 2)} dB` : "pending";
+  // Faithful rendition of Figure 5: blind-validation X-band coplanar waveguide.
+  // a) top view (ground-signal-ground with GSG RF probes and alignment fiducials)
+  // b) cross-section (G S G traces on the alumina substrate).
+  const il = iface ? `${fmt(iface.prediction.insertion_loss_db, 2)} dB` : "pending";
+  const rl = iface ? `${fmt(iface.prediction.return_loss_db, 1)} dB` : "pending";
+  const f0 = iface ? `${fmt(iface.prediction.resonance_frequency_ghz, 2)} GHz` : "pending";
+  const yld = iface ? iface.prediction.yield_probability : 1;
+  const fid = "#c79a3b";
+  // Light degradation cue: low predicted yield darkens/cracks the traces.
+  const wear = Math.max(0, Math.min(1, (0.72 - yld) / 0.5));
+  const crackOpacity = svgNum(wear * 0.85, 2);
   return `
-    ${defs(glow)}
-    <path d="M120 170h520M120 250h520" stroke="${color}" stroke-width="34" opacity="0.18" filter="url(#mist)"/>
-    <path d="M120 170h520M120 250h520" stroke="${color}" stroke-width="16" stroke-linecap="round"/>
-    <path d="M120 210h520" stroke="${color}" stroke-width="24" stroke-linecap="round"/>
-    <path d="M92 124h44v172H92zM624 124h44v172h-44z" fill="${color}"/>
-    <text x="54" y="70" fill="#0b5f6d" font-size="18" font-weight="700">coplanar waveguide - ${loss}</text>
+    <defs>
+      <linearGradient id="cpwGold" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e2c062"/>
+        <stop offset="0.5" stop-color="#c79a3b"/>
+        <stop offset="1" stop-color="#a67d27"/>
+      </linearGradient>
+      <linearGradient id="cpwSub" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#edeff1"/>
+        <stop offset="1" stop-color="#d2d5d8"/>
+      </linearGradient>
+      <linearGradient id="cpwProbe" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#e2e5e7"/>
+        <stop offset="1" stop-color="#c1c5c8"/>
+      </linearGradient>
+      <marker id="cpwArrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 1 L9 5 L0 9 z" fill="#1d2526"/>
+      </marker>
+    </defs>
+
+    <!-- Panel a) top view -->
+    <text x="18" y="34" fill="#1d2526" font-size="16" font-weight="800">a)</text>
+    <rect x="44" y="64" width="404" height="320" rx="14" fill="#f5efde" stroke="#cdbf97" stroke-width="2"/>
+
+    <!-- alignment fiducials at the four corners -->
+    <rect x="60" y="80" width="26" height="26" rx="3" fill="${fid}"/>
+    <rect x="406" y="80" width="26" height="26" rx="3" fill="${fid}"/>
+    <rect x="60" y="332" width="26" height="26" rx="3" fill="${fid}"/>
+    <rect x="406" y="332" width="26" height="26" rx="3" fill="${fid}"/>
+
+    <!-- conductors: top ground, signal line, bottom ground -->
+    <rect x="100" y="126" width="292" height="44" rx="3" fill="url(#cpwGold)"/>
+    <rect x="100" y="200" width="292" height="20" rx="3" fill="url(#cpwGold)"/>
+    <rect x="100" y="246" width="292" height="58" rx="3" fill="url(#cpwGold)"/>
+    <g stroke="#5a3f12" stroke-width="2" opacity="${crackOpacity}">
+      <path d="M170 246l14 18M250 304l-12 -20M320 246l16 22"/>
+    </g>
+
+    <!-- labels with vertical dashed leader arrows -->
+    <text x="140" y="48" fill="#1d2526" font-size="9.5" font-weight="700" text-anchor="middle">Ground Plane (G)</text>
+    <line x1="140" y1="54" x2="140" y2="124" stroke="#1d2526" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#cpwArrow)"/>
+    <text x="246" y="48" fill="#1d2526" font-size="9.5" font-weight="700" text-anchor="middle">Signal Line (S)</text>
+    <line x1="246" y1="54" x2="246" y2="198" stroke="#1d2526" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#cpwArrow)"/>
+    <text x="356" y="48" fill="#1d2526" font-size="9.5" font-weight="700" text-anchor="middle">Ground Plane (G)</text>
+    <line x1="356" y1="54" x2="356" y2="124" stroke="#1d2526" stroke-width="1.2" stroke-dasharray="4 4" marker-end="url(#cpwArrow)"/>
+
+    <!-- RF probes (GSG) straddling the signal line on both sides -->
+    <g>
+      <ellipse cx="14" cy="210" rx="12" ry="17" fill="${fid}"/>
+      <rect x="18" y="182" width="44" height="56" rx="6" fill="url(#cpwProbe)" stroke="#a9adb0" stroke-width="1.5"/>
+      <rect x="36" y="186" width="10" height="48" rx="2" fill="#b6babd"/>
+      <rect x="62" y="206" width="42" height="8" rx="2" fill="url(#cpwGold)"/>
+      <text x="40" y="172" fill="#6a6f72" font-size="10" font-weight="700" text-anchor="middle">RF Probe</text>
+      <text x="40" y="182" fill="#9097a0" font-size="8.5" text-anchor="middle">(GSG)</text>
+    </g>
+    <g>
+      <ellipse cx="478" cy="210" rx="12" ry="17" fill="${fid}"/>
+      <rect x="430" y="182" width="44" height="56" rx="6" fill="url(#cpwProbe)" stroke="#a9adb0" stroke-width="1.5"/>
+      <rect x="446" y="186" width="10" height="48" rx="2" fill="#b6babd"/>
+      <rect x="388" y="206" width="42" height="8" rx="2" fill="url(#cpwGold)"/>
+      <text x="452" y="172" fill="#6a6f72" font-size="10" font-weight="700" text-anchor="middle">RF Probe</text>
+      <text x="452" y="182" fill="#9097a0" font-size="8.5" text-anchor="middle">(GSG)</text>
+    </g>
+
+    <!-- alignment fiducials caption with span arrow reaching the bottom fiducials -->
+    <line x1="73" y1="363" x2="419" y2="363" stroke="#1d2526" stroke-width="1.6" marker-start="url(#cpwArrow)" marker-end="url(#cpwArrow)"/>
+    <rect x="188" y="354" width="116" height="18" fill="#f5efde"/>
+    <text x="246" y="368" fill="#1d2526" font-size="11.5" font-weight="700" text-anchor="middle">Alignment Fiducials</text>
+
+    <!-- Panel b) cross-section -->
+    <text x="466" y="34" fill="#1d2526" font-size="16" font-weight="800">b)</text>
+    <rect x="494" y="64" width="254" height="276" rx="14" fill="#ffffff" stroke="#d9dfda" stroke-width="2"/>
+    <text x="621" y="108" fill="#1256a0" font-size="15" font-weight="800" text-anchor="middle">Cross-Section (Side View)</text>
+
+    <!-- G S G dimension arrows -->
+    <text x="551" y="156" fill="#1d2526" font-size="15" font-weight="800" text-anchor="middle">G</text>
+    <line x1="518" y1="172" x2="584" y2="172" stroke="#1d2526" stroke-width="1.6" marker-start="url(#cpwArrow)" marker-end="url(#cpwArrow)"/>
+    <text x="621" y="156" fill="#1d2526" font-size="15" font-weight="800" text-anchor="middle">S</text>
+    <line x1="601" y1="172" x2="641" y2="172" stroke="#1d2526" stroke-width="1.6" marker-start="url(#cpwArrow)" marker-end="url(#cpwArrow)"/>
+    <text x="691" y="156" fill="#1d2526" font-size="15" font-weight="800" text-anchor="middle">G</text>
+    <line x1="658" y1="172" x2="724" y2="172" stroke="#1d2526" stroke-width="1.6" marker-start="url(#cpwArrow)" marker-end="url(#cpwArrow)"/>
+
+    <!-- traces sitting on the alumina substrate -->
+    <rect x="518" y="186" width="66" height="13" rx="2" fill="url(#cpwGold)"/>
+    <rect x="601" y="186" width="40" height="13" rx="2" fill="url(#cpwGold)"/>
+    <rect x="658" y="186" width="66" height="13" rx="2" fill="url(#cpwGold)"/>
+    <rect x="506" y="199" width="236" height="78" rx="4" fill="url(#cpwSub)" stroke="#a9adb0" stroke-width="1.5"/>
+    <text x="621" y="244" fill="#3a4042" font-size="14" font-weight="700" text-anchor="middle">Alumina Substrate</text>
+
+    <!-- live blind-validation readout -->
+    <text x="621" y="312" fill="#0b5f6d" font-size="12" font-weight="700" text-anchor="middle">Blind X-band CPW (held out)</text>
+    <text x="621" y="330" fill="#5b6764" font-size="11" text-anchor="middle">f0 ${f0} · S21 ${il} · S11 ${rl}</text>
   `;
 }
 
@@ -697,9 +848,75 @@ function renderDatasetBadge() {
   $("datasetBadge").textContent = rows ? `${rows.total.toLocaleString()} BOND-AI synthetic rows trained` : "Model artifact missing";
 }
 
+function renderModeHint() {
+  setText("modeHint", MODE_HINTS[state.mode] || "");
+}
+
+function renderMethodology() {
+  const m = state.meta;
+  if (!m) return;
+  const project = m.project || {};
+  setText("hypothesis", project.hypothesis ? `Working hypothesis: ${project.hypothesis}` : "");
+  setText("honestyNote", project.honesty_note || "");
+
+  $("methodPipeline").innerHTML = (m.pipeline_stages || [])
+    .map(
+      (stage, index) => `
+        <div class="pipeline-step">
+          <span class="step-index">${index + 1}</span>
+          <strong>${stage.stage}</strong>
+          <span>${stage.detail}</span>
+        </div>
+      `,
+    )
+    .join("");
+
+  $("innovationList").innerHTML = (m.innovations || [])
+    .map((item) => `<li><strong>${item.title}</strong><span>${item.detail}</span></li>`)
+    .join("");
+
+  $("regimeList").innerHTML = (m.temperature_regimes || [])
+    .map(
+      (regime) => `
+        <div class="regime-item">
+          <div class="regime-top"><strong>${regime.regime}</strong><span class="regime-range">${regime.range}</span></div>
+          <span>${regime.inks} &middot; ${regime.objective}</span>
+        </div>
+      `,
+    )
+    .join("");
+
+  const targetBody = document.querySelector("#targetTable tbody");
+  if (targetBody) {
+    targetBody.innerHTML = (m.performance_targets || [])
+      .map(
+        (target) =>
+          `<tr><td>${target.parameter}</td><td>${target.benchmark}</td><td><strong>${target.target}</strong></td></tr>`,
+      )
+      .join("");
+  }
+
+  $("standardList").innerHTML = (m.standards || []).map((standard) => `<li>${standard}</li>`).join("");
+
+  $("referenceList").innerHTML = (m.references || [])
+    .map((ref) => `<li><strong>${ref.authors} (${ref.year}).</strong> ${ref.title}. <em>${ref.venue}</em>.</li>`)
+    .join("");
+
+  $("siteFooter").innerHTML = `
+    <div class="footer-lead"><strong>${project.name || "BOND-AI"}</strong> &mdash; ${project.subtitle || ""}</div>
+    <div class="footer-meta">
+      <span>${project.topic || ""}</span>
+      <span>${project.lead || ""}</span>
+      <span>${project.duration || ""}</span>
+    </div>
+    <div class="footer-partners">${(project.partners || []).map((partner) => `<span>${partner}</span>`).join("")}</div>
+  `;
+}
+
 function renderAll() {
   if (!state.meta) return;
   syncLabels();
+  renderModeHint();
   renderMaterialStack();
   renderDatasetBadge();
   renderSpecimen();
@@ -715,6 +932,21 @@ function renderAll() {
 function bindEvents() {
   document.querySelectorAll(".mode-button").forEach((button) => {
     button.addEventListener("click", () => setMode(button.dataset.mode));
+  });
+  const toggle = document.querySelector(".mode-toggle");
+  toggle.addEventListener("keydown", (event) => {
+    const navKeys = ["ArrowRight", "ArrowLeft", "ArrowUp", "ArrowDown", "Home", "End"];
+    if (!navKeys.includes(event.key)) return;
+    event.preventDefault();
+    const buttons = [...toggle.querySelectorAll(".mode-button")];
+    const current = buttons.findIndex((b) => b.dataset.mode === state.mode);
+    let next = current < 0 ? 0 : current;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") next = (current + 1) % buttons.length;
+    else if (event.key === "ArrowLeft" || event.key === "ArrowUp") next = (current - 1 + buttons.length) % buttons.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = buttons.length - 1;
+    setMode(buttons[next].dataset.mode);
+    buttons[next].focus();
   });
   document.querySelectorAll("input, select").forEach((input) => {
     input.addEventListener("input", () => {
@@ -755,6 +987,7 @@ async function boot() {
   $("healthText").textContent = health.ok ? "Models loaded" : "Training artifacts missing";
   state.meta = await fetch("/api/metadata").then((r) => r.json());
   populateControls();
+  renderMethodology();
   bindEvents();
   await runPattern();
   await runCoupon(false);

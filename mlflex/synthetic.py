@@ -80,7 +80,7 @@ PATTERN_TYPES: tuple[dict[str, Any], ...] = (
 DEVICE_TYPES: tuple[dict[str, Any], ...] = (
     {
         "id": "cpw",
-        "label": "Blind CPW validation structure",
+        "label": "Blind X-band CPW (held out)",
         "nominal_width_um": 360.0,
         "nominal_gap_um": 180.0,
         "trace_length_mm": 31.0,
@@ -352,6 +352,94 @@ def metadata() -> dict[str, Any]:
         "interface_targets": INTERFACE_TARGETS,
         "coupon_features": COUPON_FEATURES,
         "coupon_targets": COUPON_TARGETS,
+        "project": {
+            "name": "BOND-AI",
+            "subtitle": (
+                "A physics-of-failure digital twin with machine-learning prognostics for "
+                "high-temperature printed interfaces and bond joints"
+            ),
+            "topic": "SEMI FlexTech 2026 - Topic B: Advanced Bonding Reliability",
+            "lead": "UMass Lowell / Raytheon-UMass Lowell Research Institute (RURI)",
+            "partners": [
+                "Applied Nanotech Inc. (ANI) - high-temperature inks",
+                "Bayflex Solutions - endurance test systems and FlexData",
+                "RAGE Systems - industrial end-user and dual-use",
+                "RTX - industrial end-user and defense transition (non-funding)",
+            ],
+            "duration": "12 months (10/2026 - 09/2027)",
+            "hypothesis": (
+                "Measurable degradation of printed interfaces is an earlier and more sensitive "
+                "predictor of bond-joint reliability than bond testing alone."
+            ),
+            "honesty_note": (
+                "All current outputs are synthetic and illustrative. The five models are trained on "
+                "240,000 synthetic rows to demonstrate the data-fusion, uncertainty, and decision "
+                "pipeline - not the measured reliability of any specific material. Under the project "
+                "(Tasks T1-T6) the synthetic training data are replaced with measured coupon data, "
+                "the q90 bands are re-derived from conformal calibration on observed high-temperature "
+                "failures, and the decision states are validated against SEM and cross-section ground truth."
+            ),
+        },
+        "pipeline_stages": [
+            {"stage": "Integrated coupon", "detail": "Zone A interface and Zone B bonding structures on one 500C alumina substrate"},
+            {"stage": "Multimodal characterization", "detail": "electrical (4-point, Kelvin, I-V), structural (X-ray/CT, SEM/EDS/FIB), and mechanical (shear, pull, adhesion)"},
+            {"stage": "Interface Digital Twin", "detail": "physics-of-failure descriptors drive degradation state, remaining useful life, and ranked failure mode"},
+            {"stage": "Conformal decision", "detail": "calibrated PASS / MARGINAL / DEFER-TO-INSPECTION with distribution-free q90 bounds"},
+            {"stage": "Active-learning loop", "detail": "uncertainty-guided selection of the next coupon, ink, and aging condition"},
+        ],
+        "innovations": [
+            {
+                "title": "Unified interface-and-bond platform",
+                "detail": "One 500C-capable alumina coupon co-locates interface and bonding structures under a shared substrate, process, and thermal history.",
+            },
+            {
+                "title": "Multimodal common degradation state",
+                "detail": "Electrical, structural, and mechanical data fuse into shared physics descriptors: dR/R0, crack density, void fraction, contact resistance, adhesion, and bond strength.",
+            },
+            {
+                "title": "Physics-informed twin with conformal UQ",
+                "detail": "Arrhenius, Coffin-Manson, Black, and intermetallic-growth priors constrain learning; conformal prediction gives distribution-free confidence on every estimate.",
+            },
+            {
+                "title": "Adaptive qualification via active learning",
+                "detail": "Experiments are chosen by expected information gain rather than a fixed factorial grid, reducing coupon count while holding statistical confidence.",
+            },
+            {
+                "title": "Blind functional validation",
+                "detail": "A held-out X-band CPW built on the same materials confirms the learned interface physics generalizes to a practical printed device.",
+            },
+        ],
+        "temperature_regimes": [
+            {"regime": "Regime I", "range": "25-180 C", "inks": "Both inks (Ag-NP + ANI)", "objective": "Common baseline and digital-twin calibration"},
+            {"regime": "Regime II", "range": "250-500 C", "inks": "ANI 500C ink only", "objective": "High-temperature degradation, failure mechanisms, and RUL"},
+        ],
+        "performance_targets": [
+            {"parameter": "Remaining-useful-life prediction (held-out coupons)", "benchmark": "Not established", "target": "MAPE <= 20%"},
+            {"parameter": "Blind CPW validation", "benchmark": "Not established", "target": "Correct degradation trend, dominant failure mechanism, and RF performance within model uncertainty"},
+            {"parameter": "Failure-mode classification", "benchmark": "Manual interpretation", "target": "Top-1 >= 75%, Top-3 >= 90%"},
+            {"parameter": "Electrical degradation tracking (dR/R0)", "benchmark": "Manual measurements", "target": "Prediction error <= 15%"},
+            {"parameter": "Sustained high-temperature qualification", "benchmark": "~150 C demonstrated", "target": "Regime I 150-180 C (both inks); Regime II >= 250 C aging and excursions to 500 C (ANI)"},
+            {"parameter": "Active-learning efficiency", "benchmark": "Fixed test matrix", "target": ">= 25-30% fewer coupons"},
+            {"parameter": "Reference benchmark systems", "benchmark": "0", "target": "2 standardized benchmark systems"},
+            {"parameter": "Measurement repeatability (Gage R&R)", "benchmark": "Not established", "target": "<= 10%"},
+            {"parameter": "Technology / Manufacturing Readiness Level", "benchmark": "TRL 4 / MRL 4", "target": "TRL 5 / MRL 5"},
+        ],
+        "standards": [
+            "ASTM B193 - resistivity of electrical conductor materials",
+            "ASTM D3359 - adhesion by tape test",
+            "ASTM E831 - linear thermal expansion (CTE) by TMA",
+            "ASTM E1545 - glass-transition temperature by TMA",
+            "ASTM F1529 - thermal conductivity",
+        ],
+        "references": [
+            {"authors": "Li et al.", "year": 2024, "title": "Normalized resistance-rate model for fatigue life in conductive inks", "venue": "Flexible and Printed Electronics"},
+            {"authors": "Mohd Asri et al.", "year": 2021, "title": "Electrical performance and reliability of silver inkjet-printed circuits", "venue": "J. Mater. Sci.: Mater. Electron."},
+            {"authors": "Cloutier et al.", "year": 2024, "title": "High-temperature reliability and degradation of printed conductive interconnects", "venue": "harsh-environment FHE (citation pending verification)"},
+            {"authors": "Areias et al.", "year": 2025, "title": "Additive integration of a bare die high-power microwave amplifier using 3-D printed interconnects", "venue": "IEEE T-MTT"},
+            {"authors": "Karniadakis et al.", "year": 2021, "title": "Physics-informed machine learning", "venue": "Nature Reviews Physics"},
+            {"authors": "Angelopoulos & Bates", "year": 2021, "title": "A gentle introduction to conformal prediction", "venue": "arXiv:2107.07511"},
+            {"authors": "Lookman et al.", "year": 2019, "title": "Active learning in materials science via adaptive sampling", "venue": "npj Computational Materials"},
+        ],
     }
 
 

@@ -4,7 +4,11 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>BOND-AI Reliability Digital Twin</title>
-    <link rel="stylesheet" href="/static/styles.css?v=bond-ai-20260627b" />
+    <meta
+      name="description"
+      content="BOND-AI: a physics-of-failure digital twin with machine-learning prognostics for high-temperature printed interfaces and bond joints on a 500C alumina coupon."
+    />
+    <link rel="stylesheet" href="/static/styles.css?v=bond-ai-20260629" />
   </head>
   <body>
     <header class="topbar">
@@ -12,24 +16,38 @@
         <span class="brand-mark">BOND-AI</span>
         <div>
           <h1>BOND-AI Reliability Digital Twin</h1>
-          <p>Integrated interface degradation and bond-joint reliability on a 500C alumina coupon</p>
+          <p>Physics-of-failure prognostics for high-temperature printed interfaces and bond joints</p>
         </div>
       </div>
-      <div class="status-strip" aria-label="model status">
-        <span id="healthDot" class="dot"></span>
-        <span id="healthText">Loading models</span>
+      <div class="status-cluster">
+        <span class="topic-chip">SEMI FlexTech &middot; Topic B</span>
+        <div class="status-strip" role="status" aria-label="model status">
+          <span id="healthDot" class="dot"></span>
+          <span id="healthText">Loading models</span>
+        </div>
       </div>
     </header>
 
+    <div class="synthetic-banner" role="note">
+      <strong>Synthetic demonstrator.</strong>
+      <span
+        >All outputs are illustrative. Five models trained on 240,000 synthetic rows show the
+        data-fusion, conformal-uncertainty, and decision pipeline &mdash; pending measured project
+        coupon data (Tasks T1&ndash;T6).</span
+      >
+    </div>
+
     <main class="workspace">
       <section class="panel control-panel" aria-label="controls">
-        <div class="mode-toggle" role="tablist" aria-label="mode">
-          <button class="mode-button active" data-mode="coupon" type="button">Coupon</button>
-          <button class="mode-button" data-mode="dt" type="button">Digital Twin</button>
-          <button class="mode-button" data-mode="pattern" type="button">Characterize</button>
-          <button class="mode-button" data-mode="interface" type="button">CPW Verify</button>
-          <button class="mode-button" data-mode="optimizer" type="button">Active Learn</button>
+        <div class="mode-toggle" role="tablist" aria-label="Analysis mode">
+          <button class="mode-button active" id="tab-coupon" data-mode="coupon" type="button" role="tab" aria-selected="true" aria-controls="pane-coupon" tabindex="0">Coupon</button>
+          <button class="mode-button" id="tab-dt" data-mode="dt" type="button" role="tab" aria-selected="false" aria-controls="pane-dt" tabindex="-1">Digital Twin</button>
+          <button class="mode-button" id="tab-pattern" data-mode="pattern" type="button" role="tab" aria-selected="false" aria-controls="pane-pattern" tabindex="-1">Characterize</button>
+          <button class="mode-button" id="tab-interface" data-mode="interface" type="button" role="tab" aria-selected="false" aria-controls="pane-interface" tabindex="-1">CPW Verify</button>
+          <button class="mode-button" id="tab-optimizer" data-mode="optimizer" type="button" role="tab" aria-selected="false" aria-controls="pane-optimizer" tabindex="-1">Active Learn</button>
         </div>
+
+        <p class="mode-hint" id="modeHint" aria-live="polite"></p>
 
         <label class="field">
           <span>Ink / alumina stack</span>
@@ -38,7 +56,7 @@
 
         <div class="material-stack" id="materialStack"></div>
 
-        <div class="mode-pane" id="pane-pattern">
+        <div class="mode-pane" id="pane-pattern" role="tabpanel" aria-labelledby="tab-pattern" tabindex="0" hidden>
           <label class="field">
             <span>Printed witness geometry</span>
             <select id="patternType"></select>
@@ -82,7 +100,7 @@
           <button id="runPattern" class="primary-action" type="button">Update Characterization</button>
         </div>
 
-        <div class="mode-pane" id="pane-interface">
+        <div class="mode-pane" id="pane-interface" role="tabpanel" aria-labelledby="tab-interface" tabindex="0" hidden>
           <label class="field">
             <span>Blind validation structure</span>
             <select id="deviceType"></select>
@@ -102,7 +120,7 @@
           <button id="runInterface" class="primary-action" type="button">Run CPW Validation</button>
         </div>
 
-        <div class="mode-pane active" id="pane-coupon">
+        <div class="mode-pane active" id="pane-coupon" role="tabpanel" aria-labelledby="tab-coupon" tabindex="0">
           <label class="field">
             <span>Analysis zone</span>
             <select id="analysisZone">
@@ -149,7 +167,7 @@
           <button id="runCoupon" class="primary-action" type="button">Analyze Coupon</button>
         </div>
 
-        <div class="mode-pane" id="pane-optimizer">
+        <div class="mode-pane" id="pane-optimizer" role="tabpanel" aria-labelledby="tab-optimizer" tabindex="0" hidden>
           <label class="field">
             <span>Candidate search <b id="candidateOut"></b></span>
             <input id="candidateCount" type="range" min="200" max="1800" step="100" />
@@ -157,7 +175,7 @@
           <button id="runOptimizer" class="primary-action" type="button">Rank Next Coupon Tests</button>
         </div>
 
-        <div class="mode-pane" id="pane-dt">
+        <div class="mode-pane" id="pane-dt" role="tabpanel" aria-labelledby="tab-dt" tabindex="0" hidden>
           <label class="field">
             <span>Analysis zone</span>
             <select id="dtAnalysisZone">
@@ -192,7 +210,7 @@
         <div class="specimen-frame">
           <svg id="specimenSvg" viewBox="0 0 760 420" role="img" aria-label="synthetic printed specimen"></svg>
         </div>
-        <div class="metric-grid" id="primaryMetrics"></div>
+        <div class="metric-grid" id="primaryMetrics" aria-live="polite"></div>
         <div class="pipeline">
           <div>
             <span>Coupon</span>
@@ -244,6 +262,61 @@
       </aside>
     </main>
 
-    <script src="/static/app.js?v=bond-ai-20260627b" type="module"></script>
+    <section class="methodology" aria-label="methodology">
+      <div class="method-head">
+        <p class="eyebrow">How BOND-AI works</p>
+        <h2>One coupon, fused characterization, a conformally-gated digital twin</h2>
+        <p class="method-lede" id="hypothesis"></p>
+      </div>
+
+      <div class="method-pipeline" id="methodPipeline"></div>
+
+      <div class="method-grid">
+        <article class="method-card span-2">
+          <h3>Five technical innovations</h3>
+          <ol class="innovation-list" id="innovationList"></ol>
+        </article>
+
+        <article class="method-card">
+          <h3>Temperature regimes</h3>
+          <div class="regime-list" id="regimeList"></div>
+          <h3 class="stack-top">Reference inks</h3>
+          <p class="muted-note">
+            Baseline Ag-NP (qualified to ~180&nbsp;C) is the benchmark; the ANI 500&nbsp;C ink is aged
+            across the full envelope. Both share a single 500&nbsp;C-capable alumina substrate.
+          </p>
+        </article>
+      </div>
+
+      <div class="method-grid">
+        <article class="method-card span-2">
+          <h3>End-of-project performance targets</h3>
+          <table class="target-table" id="targetTable">
+            <caption class="visually-hidden">End-of-project performance targets versus starting benchmark</caption>
+            <thead>
+              <tr>
+                <th scope="col">Parameter</th>
+                <th scope="col">Starting / benchmark</th>
+                <th scope="col">End-of-project target</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p class="muted-note">All values are objectives contingent on relevant-environment validation, not demonstrated results.</p>
+        </article>
+
+        <article class="method-card">
+          <h3>Standards &amp; references</h3>
+          <ul class="standard-list" id="standardList"></ul>
+          <ul class="reference-list" id="referenceList"></ul>
+        </article>
+      </div>
+
+      <p class="honesty-note" id="honestyNote"></p>
+    </section>
+
+    <footer class="site-footer" id="siteFooter"></footer>
+
+    <script src="/static/app.js?v=bond-ai-20260629" type="module"></script>
   </body>
 </html>

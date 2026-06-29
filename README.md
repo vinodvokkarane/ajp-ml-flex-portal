@@ -1,8 +1,22 @@
 # BOND-AI Reliability Digital Twin Portal
 
-BOND-AI is a FastAPI web app for a standardized 500C-capable alumina coupon that combines Zone A interface test structures and Zone B bonding test structures on one substrate. The app generates a large synthetic reliability dataset, trains tree-based surrogate models, and serves an operator-facing Digital Twin that links printed-interface degradation to bond-joint reliability.
+BOND-AI is a physics-of-failure digital twin with machine-learning prognostics for high-temperature printed interfaces and bond joints. This FastAPI web app is the reviewer-accessible reference implementation of the methodology proposed under **SEMI FlexTech 2026 - Topic B: Advanced Bonding Reliability** (UMass Lowell / Raytheon-UMass Lowell Research Institute). It is built around a single 500C-capable alumina coupon that co-locates Zone A interface test structures with Zone B bonding test structures, generates a large synthetic reliability dataset, trains surrogate models, and serves an operator-facing Digital Twin that links printed-interface degradation to bond-joint reliability.
+
+The working hypothesis: measurable degradation of printed interfaces is an earlier and more sensitive predictor of bond-joint reliability than bond testing alone.
+
+> **Synthetic demonstrator.** All current outputs are illustrative. The five models are trained on 240,000 synthetic rows to demonstrate the data-fusion, conformal-uncertainty, and decision pipeline - not the measured reliability of any specific material. Under the project (Tasks T1-T6) the synthetic training data are replaced with measured coupon data, the q90 bands are re-derived from conformal calibration on observed high-temperature failures, and the decision states are validated against SEM/cross-section ground truth.
 
 The proposal document is not committed. This repository encodes the derived public-facing methodology: coupon structures, inks, representative stress conditions, characterization outputs, reliability targets, and feedback-loop behavior.
+
+## Five linked views
+
+| View | Stage |
+| --- | --- |
+| **Coupon** | Integrated Zone A + Zone B coupon reliability under accelerated aging |
+| **Digital Twin** | Closes the process-to-reliability feedback loop and ranks better recipes |
+| **Characterize** | Printed-trace geometry, resistance, and quality with a process-anomaly breakdown |
+| **CPW Verify** | Blind validation on a held-out X-band coplanar waveguide (Figure 5) |
+| **Active Learn** | Uncertainty-guided ranking of the next coupons and aging conditions |
 
 ## Coupon Platform
 
@@ -11,7 +25,19 @@ The proposal document is not committed. This repository encodes the derived publ
 - Zone A interface structures: straight lines, meander lines, square pads, and overlap pads.
 - Zone B bonding structures: daisy-chain Kelvin structures, dummy die/chip attach sites, and shear test pads.
 - Characterization: 4-point probe, Kelvin, I-V, thermal aging, thermal cycling, bending/strain, shear/pull, X-ray/CT, optical microscopy, SEM/EDS, and FIB.
-- Representative conditions: 150C, 250C, 350C, and 500C aging; -40C to 125C and room-temperature to 500C cycling; static and cyclic strain; in-situ electrical monitoring.
+- Temperature regimes: **Regime I (25-180C)** ages both inks for a common baseline and digital-twin calibration; **Regime II (250-500C)** ages the ANI 500C ink only for high-temperature degradation, failure mechanisms, and RUL.
+- Blind validation: a held-out X-band CPW (Figure 5) built on the same materials but excluded from model development.
+
+## End-of-project performance targets
+
+These are the proposal targets surfaced in the portal's methodology section (objectives contingent on relevant-environment validation, not demonstrated results):
+
+- Remaining-useful-life prediction (held-out coupons): MAPE <= 20%
+- Failure-mode classification: Top-1 >= 75%, Top-3 >= 90%
+- Electrical degradation tracking (dR/R0): prediction error <= 15%
+- Active-learning efficiency: >= 25-30% fewer coupons
+- Measurement repeatability (Gage R&R): <= 10%
+- Technology / Manufacturing Readiness Level: TRL 4 / MRL 4 -> TRL 5 / MRL 5
 
 ## What It Demonstrates
 
