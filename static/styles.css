@@ -240,7 +240,7 @@ h1 {
 
 .workspace {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(330px, 0.92fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(248px, 320px) minmax(420px, 1fr) minmax(258px, 340px);
   grid-template-rows: minmax(0, 1fr);
   gap: 14px;
   padding: 14px 18px 18px;

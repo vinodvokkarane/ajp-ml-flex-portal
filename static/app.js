@@ -40,6 +40,17 @@ const MODE_HINTS = {
     "Active learning: rank the highest-information next coupons and conditions to build the reliability map in far fewer runs.",
 };
 
+// Which Model-output blocks are relevant to each mode. The Active-learning
+// shortlist and BOND-AI feedback only appear in the Active Learn (optimizer) mode.
+const INSIGHT_BLOCKS = ["block-defect", "block-failure", "block-benchmark", "block-optimizer", "block-feedback"];
+const INSIGHT_VISIBILITY = {
+  pattern: ["block-defect", "block-benchmark"],
+  interface: ["block-benchmark"],
+  coupon: ["block-failure", "block-benchmark"],
+  dt: ["block-feedback", "block-failure", "block-benchmark"],
+  optimizer: ["block-optimizer", "block-feedback"],
+};
+
 const postJson = async (url, values) => {
   const response = await fetch(url, {
     method: "POST",
@@ -83,6 +94,10 @@ function setMode(mode) {
           : mode === "dt"
             ? "BOND-AI feedback loop"
             : "Active-learning test ranking";
+  // Entering Active Learn surfaces the shortlist and BOND-AI feedback; run once on demand.
+  if (mode === "optimizer" && !state.latestOptimizer) {
+    runOptimizer().catch(showError);
+  }
   renderAll();
 }
 
@@ -885,6 +900,14 @@ function renderModeHint() {
   setText("modeHint", MODE_HINTS[state.mode] || "");
 }
 
+function renderInsightVisibility() {
+  const visible = new Set(INSIGHT_VISIBILITY[state.mode] || INSIGHT_BLOCKS);
+  INSIGHT_BLOCKS.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.hidden = !visible.has(id);
+  });
+}
+
 function renderMethodology() {
   const m = state.meta;
   if (!m) return;
@@ -960,6 +983,7 @@ function renderAll() {
   renderBenchmarks();
   renderOptimizer();
   renderDtFeedback();
+  renderInsightVisibility();
 }
 
 function bindEvents() {
