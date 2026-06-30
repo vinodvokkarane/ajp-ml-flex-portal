@@ -1,6 +1,8 @@
 const state = {
   meta: null,
   mode: "coupon",
+  view: "dashboard",
+  zoom: { control: 1, visual: 1, insight: 1 },
   latestPattern: null,
   latestInterface: null,
   latestOptimizer: null,
@@ -82,6 +84,37 @@ function setMode(mode) {
             ? "BOND-AI feedback loop"
             : "Active-learning test ranking";
   renderAll();
+}
+
+const ZOOM_PANELS = ["control", "visual", "insight"];
+const ZOOM_MIN = 0.7;
+const ZOOM_MAX = 1.6;
+
+function applyZoom(panel) {
+  const target = document.getElementById(`zoomTarget-${panel}`);
+  if (target) target.style.zoom = String(state.zoom[panel]);
+  setText(`zoomLevel-${panel}`, `${Math.round(state.zoom[panel] * 100)}%`);
+}
+
+function bumpZoom(panel, dir) {
+  if (!(panel in state.zoom)) return;
+  const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Number((state.zoom[panel] + dir * 0.1).toFixed(2))));
+  state.zoom[panel] = next;
+  applyZoom(panel);
+}
+
+function setView(view) {
+  state.view = view;
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    const active = btn.dataset.view === view;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  const dashboard = $("view-dashboard");
+  const objectives = $("view-objectives");
+  if (dashboard) dashboard.hidden = view !== "dashboard";
+  if (objectives) objectives.hidden = view !== "objectives";
+  document.body.classList.toggle("objectives-active", view === "objectives");
 }
 
 function populateControls() {
@@ -845,7 +878,7 @@ function cpwSvg(color, glow, iface) {
 
 function renderDatasetBadge() {
   const rows = state.meta.metrics?.synthetic_rows;
-  $("datasetBadge").textContent = rows ? `${rows.total.toLocaleString()} BOND-AI synthetic rows trained` : "Model artifact missing";
+  $("datasetBadge").textContent = rows ? `${rows.total.toLocaleString()} synthetic rows` : "artifact missing";
 }
 
 function renderModeHint() {
@@ -930,6 +963,12 @@ function renderAll() {
 }
 
 function bindEvents() {
+  document.querySelectorAll(".nav-btn").forEach((button) => {
+    button.addEventListener("click", () => setView(button.dataset.view));
+  });
+  document.querySelectorAll(".zoom-btn").forEach((button) => {
+    button.addEventListener("click", () => bumpZoom(button.dataset.zoom, Number(button.dataset.dir)));
+  });
   document.querySelectorAll(".mode-button").forEach((button) => {
     button.addEventListener("click", () => setMode(button.dataset.mode));
   });
@@ -989,6 +1028,8 @@ async function boot() {
   populateControls();
   renderMethodology();
   bindEvents();
+  ZOOM_PANELS.forEach(applyZoom);
+  setView("dashboard");
   await runPattern();
   await runCoupon(false);
   renderAll();
