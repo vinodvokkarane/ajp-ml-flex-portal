@@ -46,6 +46,16 @@
     </div>
 
     <main class="view view-dashboard" id="view-dashboard">
+      <div class="mode-bar">
+        <div class="mode-toggle" role="tablist" aria-label="Analysis mode">
+          <button class="mode-button active" id="tab-coupon" data-mode="coupon" type="button" role="tab" aria-selected="true" aria-controls="pane-coupon" tabindex="0">Coupon</button>
+          <button class="mode-button" id="tab-dt" data-mode="dt" type="button" role="tab" aria-selected="false" aria-controls="pane-dt" tabindex="-1">Digital Twin</button>
+          <button class="mode-button" id="tab-pattern" data-mode="pattern" type="button" role="tab" aria-selected="false" aria-controls="pane-pattern" tabindex="-1">Characterize</button>
+          <button class="mode-button" id="tab-interface" data-mode="interface" type="button" role="tab" aria-selected="false" aria-controls="pane-interface" tabindex="-1">CPW Verify</button>
+          <button class="mode-button" id="tab-optimizer" data-mode="optimizer" type="button" role="tab" aria-selected="false" aria-controls="pane-optimizer" tabindex="-1">Active Learn</button>
+        </div>
+        <p class="mode-hint" id="modeHint" aria-live="polite"></p>
+      </div>
       <div class="workspace">
         <section class="panel control-panel" aria-label="controls">
           <div class="panel-head">
@@ -58,16 +68,6 @@
           </div>
           <div class="panel-body">
             <div class="zoom-target" id="zoomTarget-control">
-              <div class="mode-toggle" role="tablist" aria-label="Analysis mode">
-                <button class="mode-button active" id="tab-coupon" data-mode="coupon" type="button" role="tab" aria-selected="true" aria-controls="pane-coupon" tabindex="0">Coupon</button>
-                <button class="mode-button" id="tab-dt" data-mode="dt" type="button" role="tab" aria-selected="false" aria-controls="pane-dt" tabindex="-1">Digital Twin</button>
-                <button class="mode-button" id="tab-pattern" data-mode="pattern" type="button" role="tab" aria-selected="false" aria-controls="pane-pattern" tabindex="-1">Characterize</button>
-                <button class="mode-button" id="tab-interface" data-mode="interface" type="button" role="tab" aria-selected="false" aria-controls="pane-interface" tabindex="-1">CPW Verify</button>
-                <button class="mode-button" id="tab-optimizer" data-mode="optimizer" type="button" role="tab" aria-selected="false" aria-controls="pane-optimizer" tabindex="-1">Active Learn</button>
-              </div>
-
-              <p class="mode-hint" id="modeHint" aria-live="polite"></p>
-
               <label class="field">
                 <span>Ink / alumina stack</span>
                 <select id="materialSet"></select>
